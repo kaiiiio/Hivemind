@@ -1,0 +1,66 @@
+# HIVEMIND Core Dependencies
+# Install with: pip install -r requirements.txt
+
+# ============================================
+# DATA INGESTION (Week 1)
+# ============================================
+
+# Database
+psycopg2-binary==2.9.9
+sqlalchemy==2.0.25
+
+# NSE Data
+jugaad-data==2.0.0
+yfinance==0.2.36
+
+# Web Automation (for Screener.in)
+playwright==1.40.0
+
+# Data Processing
+pandas==2.2.0
+numpy==1.26.3
+python-dotenv==1.0.0
+
+# HTTP Requests
+requests==2.31.0
+
+# ============================================
+# AI AGENTS (Week 2-3) - Add as needed
+# ============================================
+
+# Google AI (Gemini)
+# google-generativeai==0.3.2
+
+# Groq (Llama-3)
+# groq==0.4.2
+
+# NVIDIA NIM
+# openai==1.12.0  # NVIDIA uses OpenAI-compatible API
+
+# Hugging Face
+# transformers==4.37.0
+# sentence-transformers==2.3.1
+
+# ============================================
+# VECTOR STORE (Week 3)
+# ============================================
+
+# ChromaDB (local, no key needed)
+chromadb==0.4.22
+
+# Qdrant (cloud option)
+# qdrant-client==1.7.0
+
+# ============================================
+# UTILITIES
+# ============================================
+
+# Logging & Monitoring
+rich==13.7.0
+
+# Scheduling (alternative to cron for dev)
+schedule==1.2.0
+
+# Testing
+pytest==8.0.0
+pytest-asyncio==0.23.4
