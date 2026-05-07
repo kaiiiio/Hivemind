@@ -78,7 +78,7 @@ playwright install chromium
 
 ```bash
 cd /workspace/src
-python data_ingestion/phase1_fo_universe.py
+python data_ingestion/nse_universe_fetcher.py
 ```
 
 Expected output:
@@ -95,7 +95,7 @@ INFO: Phase 1 complete: 185 F&O tickers available
 ### Test Phase 3: Market Regime
 
 ```bash
-python data_ingestion/phase3_market_regime.py
+python data_ingestion/market_regime_checker.py
 ```
 
 Expected output:
@@ -112,7 +112,7 @@ INFO: REGIME DECISION: RISK_ON - All indicators favorable
 ### Test Phase 6: Database Connection
 
 ```bash
-python data_ingestion/phase6_database_upsert.py
+python data_ingestion/database_upsert.py
 ```
 
 Expected output:
@@ -202,7 +202,7 @@ Exit psql:
 1. Verify credentials in `.env`
 2. Test login manually in browser
 3. Ensure your custom screen URL works
-4. Try with `headless=False` in phase2_screener.py for debugging
+4. Try with `headless=False` in screener_fundamentals.py for debugging
 
 ### Phase 3 fails (yfinance)
 **Error:** `No VIX data received`
