@@ -58,7 +58,7 @@ def run_full_pipeline():
     
     try:
         # Import database manager
-        from data_ingestion.phase6_database_upsert import DatabaseManager
+        from data_ingestion.database_upsert import DatabaseManager
         
         # Initialize database connection
         db_manager = DatabaseManager()
@@ -71,14 +71,14 @@ def run_full_pipeline():
         # PHASE 1: F&O Universe Definition
         # ========================================
         try:
-            from data_ingestion.phase1_fo_universe import run_phase1
+            from data_ingestion.nse_universe_fetcher import run_phase1
             
             fo_tickers = run_phase1(db_manager.connection if db_manager else None)
             
             if not fo_tickers:
                 raise Exception("Phase 1 failed: No F&O tickers downloaded")
             
-            results['phases_completed'].append('phase1_fo_universe')
+            results['phases_completed'].append('nse_universe_fetcher')
             logger.info(f"✓ Phase 1 complete: {len(fo_tickers)} F&O tickers")
             
         except Exception as e:
@@ -90,7 +90,7 @@ def run_full_pipeline():
         # PHASE 2: Screener.in Fundamental Filtering
         # ========================================
         try:
-            from data_ingestion.phase2_screener import run_phase2
+            from data_ingestion.screener_fundamentals import run_phase2
             import asyncio
             
             fo_ticker_set = set(fo_tickers)
@@ -103,7 +103,7 @@ def run_full_pipeline():
                 logger.warning("Phase 2 returned no survivors. Using F&O universe as fallback.")
                 survivor_tickers = fo_tickers
             else:
-                results['phases_completed'].append('phase2_screener')
+                results['phases_completed'].append('screener_fundamentals')
                 logger.info(f"✓ Phase 2 complete: {len(survivor_tickers)} survivor stocks")
             
             survivor_ticker_set = set(survivor_tickers)
@@ -119,12 +119,12 @@ def run_full_pipeline():
         # PHASE 3: Market Regime Assessment
         # ========================================
         try:
-            from data_ingestion.phase3_market_regime import run_phase3
+            from data_ingestion.market_regime_checker import run_phase3
             
             regime_data = run_phase3(db_manager.connection if db_manager else None)
             
             results['regime_status'] = regime_data.get('regime_status')
-            results['phases_completed'].append('phase3_market_regime')
+            results['phases_completed'].append('market_regime_checker')
             logger.info(f"✓ Phase 3 complete: Market regime = {regime_data['regime_status']}")
             
             # If RISK_OFF, we can halt further processing
@@ -143,14 +143,14 @@ def run_full_pipeline():
         # PHASE 4 & 5: Bhavcopy & OHLCV Data
         # ========================================
         try:
-            from data_ingestion.phase4_5_bhavcopy_ohlcv import run_phase4_5
+            from data_ingestion.price_microstructure_loader import run_phase4_5
             
             data_results = run_phase4_5(
                 survivor_tickers=survivor_ticker_set,
                 db_connection=None  # DB handling is in phase 6
             )
             
-            results['phases_completed'].append('phase4_5_data_extraction')
+            results['phases_completed'].append('price_microstructure_loader')
             logger.info(f"✓ Phases 4-5 complete: Data extracted for {len(survivor_ticker_set)} tickers")
             
         except Exception as e:
@@ -163,12 +163,12 @@ def run_full_pipeline():
         # ========================================
         if db_manager and data_results:
             try:
-                from data_ingestion.phase6_database_upsert import run_phase6
+                from data_ingestion.database_upsert import run_phase6
                 
                 success = run_phase6(data_results, db_manager)
                 
                 if success:
-                    results['phases_completed'].append('phase6_database_upsert')
+                    results['phases_completed'].append('database_upsert')
                     logger.info(f"✓ Phase 6 complete: All data upserted to database")
                 else:
                     logger.warning("Phase 6 completed with partial success")

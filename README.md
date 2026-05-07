@@ -36,12 +36,13 @@ cd src && python data_ingestion/master_pipeline.py
 
 **Week 1: Data Ingestion Layer** ✓ COMPLETE
 
-All 6 phases implemented:
-- Phase 1: F&O Universe (NSE)
-- Phase 2: Screener.in (Playwright)
-- Phase 3: Market Regime (VIX, FII/DII)
-- Phase 4-5: Bhavcopy & OHLCV
-- Phase 6: TimescaleDB Upsert
+All 6 phases implemented with descriptive module names:
+- `nse_universe_fetcher.py` - Downloads official F&O constituent list (~185 stocks)
+- `screener_fundamentals.py` - Playwright automation for Screener.in exports
+- `market_regime_checker.py` - VIX percentile + FII/DII flow analysis
+- `price_microstructure_loader.py` - Bhavcopy delivery data + yfinance OHLCV
+- `database_upsert.py` - TimescaleDB hypertable upserts
+- `master_pipeline.py` - Main orchestrator (run daily at 18:30 IST)
 
 See full documentation in the project files.
 
