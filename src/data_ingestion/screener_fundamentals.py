@@ -253,84 +253,16 @@ class ScreenerInDownloader:
         
         logger.info(f"Intersection: {len(filtered)} stocks pass both F&O and fundamental screens")
         return filtered
-    
-    def save_to_database(self, df: pd.DataFrame, db_connection) -> int:
-        """
-        Upsert Screener.in survivors into TimescaleDB.
-        
-        Args:
-            df: Cleaned DataFrame
-            db_connection: Database connection
-            
-        Returns:
-            Number of records inserted/updated
-        """
-        if df is None or df.empty:
-            return 0
-        
-        try:
-            count = 0
-            with db_connection.cursor() as cursor:
-                for _, row in df.iterrows():
-                    cursor.execute("""
-                        INSERT INTO screener_survivors (
-                            ticker, company_name, market_cap, pe_ratio, pb_ratio,
-                            debt_to_equity, roce, promoter_holding, eps_growth_3y,
-                            sales_growth_3y, is_survivor, screen_date, created_at, updated_at
-                        )
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                        ON CONFLICT (ticker)
-                        DO UPDATE SET
-                            company_name = EXCLUDED.company_name,
-                            market_cap = EXCLUDED.market_cap,
-                            pe_ratio = EXCLUDED.pe_ratio,
-                            pb_ratio = EXCLUDED.pb_ratio,
-                            debt_to_equity = EXCLUDED.debt_to_equity,
-                            roce = EXCLUDED.roce,
-                            promoter_holding = EXCLUDED.promoter_holding,
-                            eps_growth_3y = EXCLUDED.eps_growth_3y,
-                            sales_growth_3y = EXCLUDED.sales_growth_3y,
-                            is_survivor = EXCLUDED.is_survivor,
-                            screen_date = EXCLUDED.screen_date,
-                            updated_at = EXCLUDED.updated_at
-                    """, (
-                        row.get('ticker'),
-                        row.get('company_name'),
-                        row.get('market_cap'),
-                        row.get('pe_ratio'),
-                        row.get('pb_ratio'),
-                        row.get('debt_to_equity'),
-                        row.get('roce'),
-                        row.get('promoter_holding'),
-                        row.get('eps_growth_3y'),
-                        row.get('sales_growth_3y'),
-                        row.get('is_survivor', True),
-                        row.get('screen_date'),
-                        row.get('created_at'),
-                        row.get('updated_at')
-                    ))
-                    count += 1
-            
-            db_connection.commit()
-            logger.info(f"Upserted {count} records into screener_survivors table")
-            return count
-            
-        except Exception as e:
-            logger.error(f"Database upsert failed: {e}")
-            db_connection.rollback()
-            return 0
 
-
-async def run_phase2(fo_tickers: Set[str] = None, db_connection=None) -> List[str]:
+async def run_phase2(fo_tickers: Set[str] = None) -> tuple[List[str], pd.DataFrame]:
     """
     Execute Phase 2: Screener.in Fundamental Filtering.
     
     Args:
         fo_tickers: Set of F&O ticker symbols from Phase 1
-        db_connection: Optional database connection
         
     Returns:
-        List of survivor ticker symbols
+        Tuple of (List of survivor ticker symbols, filtered DataFrame)
     """
     logger.info("=" * 60)
     logger.info("PHASE 2: Screener.in Fundamental Filtering")
@@ -338,7 +270,7 @@ async def run_phase2(fo_tickers: Set[str] = None, db_connection=None) -> List[st
     
     if not PLAYWRIGHT_AVAILABLE:
         logger.error("Phase 2 requires Playwright. Install with: pip install playwright && playwright install")
-        return []
+        return [], pd.DataFrame()
     
     downloader = ScreenerInDownloader()
     
@@ -347,7 +279,7 @@ async def run_phase2(fo_tickers: Set[str] = None, db_connection=None) -> List[st
     
     if df_raw is None or df_raw.empty:
         logger.error("Phase 2 failed: Could not download from Screener.in")
-        return []
+        return [], pd.DataFrame()
     
     # Clean data
     df_clean = downloader.clean_screener_data(df_raw)
@@ -361,20 +293,14 @@ async def run_phase2(fo_tickers: Set[str] = None, db_connection=None) -> List[st
     
     if df_filtered.empty:
         logger.error("Phase 2 failed: No stocks passed both screens")
-        return []
+        return [], pd.DataFrame()
     
-    # Save to database if connection provided
-    if db_connection:
-        downloader.save_to_database(df_filtered, db_connection)
-        tickers = df_filtered['ticker'].tolist()
-    else:
-        tickers = df_filtered['ticker'].tolist()
-        logger.info(f"Returning {len(tickers)} survivor tickers (no database connection)")
+    tickers = df_filtered['ticker'].tolist()
     
     logger.info(f"Phase 2 complete: {len(tickers)} survivor stocks")
     logger.info("=" * 60)
     
-    return tickers
+    return tickers, df_filtered
 
 
 if __name__ == "__main__":
@@ -385,5 +311,5 @@ if __name__ == "__main__":
     # Example usage with mock F&O tickers
     mock_fo_tickers = {'RELIANCE', 'TCS', 'INFY', 'HDFCBANK', 'ICICIBANK'}
     
-    tickers = asyncio.run(run_phase2(fo_tickers=mock_fo_tickers))
+    tickers, df = asyncio.run(run_phase2(fo_tickers=mock_fo_tickers))
     print(f"\nSurvivors: {tickers}")

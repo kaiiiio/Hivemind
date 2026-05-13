@@ -231,6 +231,219 @@ class DatabaseManager:
             logger.error(f"Failed to retrieve survivor tickers: {e}")
             return set()
 
+    def upsert_fo_universe(self, df: pd.DataFrame) -> int:
+        """
+        Upsert F&O universe into TimescaleDB.
+        
+        Args:
+            df: Cleaned DataFrame
+            
+        Returns:
+            Number of records inserted/updated
+        """
+        if not self.connection or df is None or df.empty:
+            return 0
+        
+        try:
+            count = 0
+            with self.connection.cursor() as cursor:
+                for _, row in df.iterrows():
+                    cursor.execute("""
+                        INSERT INTO fo_universe (ticker, company_name, lot_size, is_active, added_date, last_updated)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                        ON CONFLICT (ticker) 
+                        DO UPDATE SET 
+                            company_name = EXCLUDED.company_name,
+                            lot_size = EXCLUDED.lot_size,
+                            is_active = EXCLUDED.is_active,
+                            last_updated = EXCLUDED.last_updated
+                    """, (
+                        row['ticker'],
+                        row['company_name'],
+                        row['lot_size'],
+                        row['is_active'],
+                        row['added_date'],
+                        row['last_updated']
+                    ))
+                    count += 1
+            
+            self.connection.commit()
+            logger.info(f"Upserted {count} records into fo_universe table")
+            return count
+            
+        except Exception as e:
+            logger.error(f"Database upsert failed: {e}")
+            self.connection.rollback()
+            return 0
+    
+    def get_current_universe(self) -> List[str]:
+        """
+        Get current list of active F&O tickers from database.
+        
+        Returns:
+            List of ticker symbols
+        """
+        if not self.connection:
+            return []
+            
+        try:
+            with self.connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT ticker FROM fo_universe 
+                    WHERE is_active = TRUE 
+                    ORDER BY ticker
+                """)
+                results = cursor.fetchall()
+                tickers = [row[0] for row in results]
+                logger.info(f"Retrieved {len(tickers)} active F&O tickers from database")
+                return tickers
+        except Exception as e:
+            logger.error(f"Failed to retrieve F&O universe: {e}")
+            return []
+
+    def upsert_screener_survivors(self, df: pd.DataFrame) -> int:
+        """
+        Upsert Screener.in survivors into TimescaleDB.
+        
+        Args:
+            df: Cleaned DataFrame
+            
+        Returns:
+            Number of records inserted/updated
+        """
+        if not self.connection or df is None or df.empty:
+            return 0
+        
+        try:
+            count = 0
+            with self.connection.cursor() as cursor:
+                for _, row in df.iterrows():
+                    cursor.execute("""
+                        INSERT INTO screener_survivors (
+                            ticker, company_name, market_cap, pe_ratio, pb_ratio,
+                            debt_to_equity, roce, promoter_holding, eps_growth_3y,
+                            sales_growth_3y, is_survivor, screen_date, created_at, updated_at
+                        )
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        ON CONFLICT (ticker)
+                        DO UPDATE SET
+                            company_name = EXCLUDED.company_name,
+                            market_cap = EXCLUDED.market_cap,
+                            pe_ratio = EXCLUDED.pe_ratio,
+                            pb_ratio = EXCLUDED.pb_ratio,
+                            debt_to_equity = EXCLUDED.debt_to_equity,
+                            roce = EXCLUDED.roce,
+                            promoter_holding = EXCLUDED.promoter_holding,
+                            eps_growth_3y = EXCLUDED.eps_growth_3y,
+                            sales_growth_3y = EXCLUDED.sales_growth_3y,
+                            is_survivor = EXCLUDED.is_survivor,
+                            screen_date = EXCLUDED.screen_date,
+                            updated_at = EXCLUDED.updated_at
+                    """, (
+                        row.get('ticker'),
+                        row.get('company_name'),
+                        row.get('market_cap'),
+                        row.get('pe_ratio'),
+                        row.get('pb_ratio'),
+                        row.get('debt_to_equity'),
+                        row.get('roce'),
+                        row.get('promoter_holding'),
+                        row.get('eps_growth_3y'),
+                        row.get('sales_growth_3y'),
+                        row.get('is_survivor', True),
+                        row.get('screen_date'),
+                        row.get('created_at'),
+                        row.get('updated_at')
+                    ))
+                    count += 1
+            
+            self.connection.commit()
+            logger.info(f"Upserted {count} records into screener_survivors table")
+            return count
+            
+        except Exception as e:
+            logger.error(f"Database upsert failed: {e}")
+            self.connection.rollback()
+            return 0
+
+    def upsert_market_regime(self, regime_data: Dict) -> bool:
+        """
+        Save regime assessment to database.
+        
+        Args:
+            regime_data: Dictionary with regime metrics
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        if not self.connection or not regime_data:
+            return False
+            
+        try:
+            with self.connection.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO market_regime (
+                        trade_date, vix_close, vix_10d_avg, vix_percentile,
+                        fii_flow_10d_sum, dii_flow_10d_sum, nifty_change_pct,
+                        regime_status, regime_reason, created_at
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (trade_date)
+                    DO UPDATE SET
+                        vix_close = EXCLUDED.vix_close,
+                        vix_10d_avg = EXCLUDED.vix_10d_avg,
+                        vix_percentile = EXCLUDED.vix_percentile,
+                        fii_flow_10d_sum = EXCLUDED.fii_flow_10d_sum,
+                        dii_flow_10d_sum = EXCLUDED.dii_flow_10d_sum,
+                        nifty_change_pct = EXCLUDED.nifty_change_pct,
+                        regime_status = EXCLUDED.regime_status,
+                        regime_reason = EXCLUDED.regime_reason,
+                        created_at = EXCLUDED.created_at
+                """, (
+                    regime_data['trade_date'],
+                    regime_data.get('vix_close'),
+                    regime_data.get('vix_10d_avg'),
+                    regime_data.get('vix_percentile'),
+                    regime_data.get('fii_flow_10d_sum'),
+                    regime_data.get('dii_flow_10d_sum'),
+                    regime_data.get('nifty_change_pct'),
+                    regime_data['regime_status'],
+                    regime_data['regime_reason'],
+                    regime_data['created_at']
+                ))
+            
+            self.connection.commit()
+            logger.info("Saved regime assessment to database")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Database save failed: {e}")
+            self.connection.rollback()
+            return False
+    
+    def get_current_regime(self) -> Optional[str]:
+        """
+        Get current market regime from database.
+        
+        Returns:
+            Current regime status or None
+        """
+        if not self.connection:
+            return None
+            
+        try:
+            with self.connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT regime_status FROM market_regime
+                    ORDER BY trade_date DESC
+                    LIMIT 1
+                """)
+                result = cursor.fetchone()
+                return result[0] if result else None
+        except Exception as e:
+            logger.error(f"Failed to retrieve current regime: {e}")
+            return None
+
 
 def run_phase6(data_results: Dict, db_manager: DatabaseManager) -> bool:
     """
