@@ -130,91 +130,14 @@ class FOUniverseDownloader:
         
         logger.info(f"Cleaned F&O universe: {len(df)} valid tickers")
         return df
-    
-    def save_to_database(self, df: pd.DataFrame, db_connection) -> int:
-        """
-        Upsert F&O universe into TimescaleDB.
-        
-        Args:
-            df: Cleaned DataFrame
-            db_connection: SQLAlchemy or psycopg2 connection
-            
-        Returns:
-            Number of records inserted/updated
-        """
-        if df is None or df.empty:
-            return 0
-        
-        try:
-            # Use pandas to_sql with upsert logic
-            # For PostgreSQL, we'll use a custom UPSERT query
-            
-            count = 0
-            with db_connection.cursor() as cursor:
-                for _, row in df.iterrows():
-                    cursor.execute("""
-                        INSERT INTO fo_universe (ticker, company_name, lot_size, is_active, added_date, last_updated)
-                        VALUES (%s, %s, %s, %s, %s, %s)
-                        ON CONFLICT (ticker) 
-                        DO UPDATE SET 
-                            company_name = EXCLUDED.company_name,
-                            lot_size = EXCLUDED.lot_size,
-                            is_active = EXCLUDED.is_active,
-                            last_updated = EXCLUDED.last_updated
-                    """, (
-                        row['ticker'],
-                        row['company_name'],
-                        row['lot_size'],
-                        row['is_active'],
-                        row['added_date'],
-                        row['last_updated']
-                    ))
-                    count += 1
-            
-            db_connection.commit()
-            logger.info(f"Upserted {count} records into fo_universe table")
-            return count
-            
-        except Exception as e:
-            logger.error(f"Database upsert failed: {e}")
-            db_connection.rollback()
-            return 0
-    
-    def get_current_universe(self, db_connection) -> List[str]:
-        """
-        Get current list of active F&O tickers from database.
-        
-        Args:
-            db_connection: Database connection
-            
-        Returns:
-            List of ticker symbols
-        """
-        try:
-            with db_connection.cursor() as cursor:
-                cursor.execute("""
-                    SELECT ticker FROM fo_universe 
-                    WHERE is_active = TRUE 
-                    ORDER BY ticker
-                """)
-                results = cursor.fetchall()
-                tickers = [row[0] for row in results]
-                logger.info(f"Retrieved {len(tickers)} active F&O tickers from database")
-                return tickers
-        except Exception as e:
-            logger.error(f"Failed to retrieve F&O universe: {e}")
-            return []
 
 
-def run_phase1(db_connection=None) -> List[str]:
+def run_phase1() -> tuple[List[str], pd.DataFrame]:
     """
     Execute Phase 1: F&O Universe Definition.
     
-    Args:
-        db_connection: Optional database connection (creates new if not provided)
-        
     Returns:
-        List of active F&O ticker symbols
+        Tuple of (List of active F&O ticker symbols, cleaned DataFrame)
     """
     logger.info("=" * 60)
     logger.info("PHASE 1: F&O Universe Definition")
@@ -227,32 +150,26 @@ def run_phase1(db_connection=None) -> List[str]:
     
     if df_raw is None or df_raw.empty:
         logger.error("Phase 1 failed: Could not download F&O universe")
-        return []
+        return [], pd.DataFrame()
     
     # Clean and validate
     df_clean = downloader.clean_and_validate(df_raw)
     
     if df_clean.empty:
         logger.error("Phase 1 failed: No valid tickers after cleaning")
-        return []
+        return [], pd.DataFrame()
     
-    # Save to database if connection provided
-    if db_connection:
-        downloader.save_to_database(df_clean, db_connection)
-        tickers = downloader.get_current_universe(db_connection)
-    else:
-        # Return tickers from cleaned DataFrame
-        tickers = df_clean['ticker'].tolist()
-        logger.info(f"Returning {len(tickers)} tickers (no database connection)")
+    # Return tickers from cleaned DataFrame
+    tickers = df_clean['ticker'].tolist()
     
     logger.info(f"Phase 1 complete: {len(tickers)} F&O tickers available")
     logger.info("=" * 60)
     
-    return tickers
+    return tickers, df_clean
 
 
 if __name__ == "__main__":
     # Test run without database
-    tickers = run_phase1()
+    tickers, df = run_phase1()
     print(f"\nDownloaded {len(tickers)} F&O tickers:")
     print(tickers[:10], "...")  # Show first 10

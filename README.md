@@ -1,51 +1,33 @@
 # HIVEMIND - Multi-Agent AI Trading System
 
-## Overview
+[![Status](https://img.shields.io/badge/Status-Development-orange)](docs/ROADMAP.md)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 HIVEMIND is a swarm-based AI trading system that wraps quantitative signal generation inside a multi-agent consensus framework. Unlike traditional signal engines, HIVEMIND uses specialized AI agents that debate, research, remember, and learn from each trade.
 
-## Quick Start
+---
 
-### Step 1: Setup Environment
+## 🚀 Vision
 
-```bash
-cd /workspace
-cp config/.env.example config/.env
-# Edit config/.env with your credentials
-```
+To build an autonomous trading entity where diverse AI agents (Fundamentalists, Technicians, Macro Analysts) collaborate to find high-probability setups while strictly adhering to risk management protocols.
 
-### Step 2: Start Database
+## 📖 Documentation
 
-```bash
-docker-compose up -d timescaledb
-```
+Explore the detailed documentation to get started and understand the system architecture.
 
-### Step 3: Install Dependencies
+- 🛠️ **[Setup Guide](docs/SETUP.md)** - Environment initialization, dependencies, and configuration.
+- 🏗️ **[Architecture Overview](docs/ARCHITECTURE.md)** - Technical breakdown of the system components and data flow.
+- 📈 **[Roadmap & Status](docs/ROADMAP.md)** - Development phases, current progress, and future milestones.
+- 💻 **[Usage Guide](docs/USAGE.md)** - How to run the pipeline and schedule daily tasks.
 
-```bash
-pip install -r requirements.txt
-```
+## 🛠️ Tech Stack
 
-### Step 4: Test Data Ingestion
+- **Core**: Python 3.10+
+- **Intelligence**: Multi-Agent Consensus Framework
+- **Database**: TimescaleDB (PostgreSQL) for time-series data
+- **Data Sources**: NSE Official, Screener.in, Yahoo Finance
+- **Infrastructure**: Docker & Playwright
 
-```bash
-cd src && python data_ingestion/master_pipeline.py
-```
+## ⚖️ License
 
-## Current Status
-
-**Week 1: Data Ingestion Layer** ✓ COMPLETE
-
-All 6 phases implemented with descriptive module names:
-- `nse_universe_fetcher.py` - Downloads official F&O constituent list (~185 stocks)
-- `screener_fundamentals.py` - Playwright automation for Screener.in exports
-- `market_regime_checker.py` - VIX percentile + FII/DII flow analysis
-- `price_microstructure_loader.py` - Bhavcopy delivery data + yfinance OHLCV
-- `database_upsert.py` - TimescaleDB hypertable upserts
-- `master_pipeline.py` - Main orchestrator (run daily at 18:30 IST)
-
-See full documentation in the project files.
-
-## License
-
-MIT License - Educational purposes only. Not financial advice.
+MIT License - Educational purposes only. **Not financial advice.** Trading involves significant risk.

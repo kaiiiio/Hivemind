@@ -246,91 +246,12 @@ class MarketRegimeAnalyzer:
             return 'CAUTIOUS', '; '.join(reasons) if reasons else 'Mixed signals'
         else:
             return 'RISK_ON', 'All indicators favorable for long positions'
-    
-    def save_to_database(self, regime_data: Dict, db_connection) -> bool:
-        """
-        Save regime assessment to database.
-        
-        Args:
-            regime_data: Dictionary with regime metrics
-            db_connection: Database connection
-            
-        Returns:
-            True if successful, False otherwise
-        """
-        try:
-            with db_connection.cursor() as cursor:
-                cursor.execute("""
-                    INSERT INTO market_regime (
-                        trade_date, vix_close, vix_10d_avg, vix_percentile,
-                        fii_flow_10d_sum, dii_flow_10d_sum, nifty_change_pct,
-                        regime_status, regime_reason, created_at
-                    )
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    ON CONFLICT (trade_date)
-                    DO UPDATE SET
-                        vix_close = EXCLUDED.vix_close,
-                        vix_10d_avg = EXCLUDED.vix_10d_avg,
-                        vix_percentile = EXCLUDED.vix_percentile,
-                        fii_flow_10d_sum = EXCLUDED.fii_flow_10d_sum,
-                        dii_flow_10d_sum = EXCLUDED.dii_flow_10d_sum,
-                        nifty_change_pct = EXCLUDED.nifty_change_pct,
-                        regime_status = EXCLUDED.regime_status,
-                        regime_reason = EXCLUDED.regime_reason,
-                        created_at = EXCLUDED.created_at
-                """, (
-                    regime_data['trade_date'],
-                    regime_data.get('vix_close'),
-                    regime_data.get('vix_10d_avg'),
-                    regime_data.get('vix_percentile'),
-                    regime_data.get('fii_flow_10d_sum'),
-                    regime_data.get('dii_flow_10d_sum'),
-                    regime_data.get('nifty_change_pct'),
-                    regime_data['regime_status'],
-                    regime_data['regime_reason'],
-                    regime_data['created_at']
-                ))
-            
-            db_connection.commit()
-            logger.info("Saved regime assessment to database")
-            return True
-            
-        except Exception as e:
-            logger.error(f"Database save failed: {e}")
-            db_connection.rollback()
-            return False
-    
-    def get_current_regime(self, db_connection) -> Optional[str]:
-        """
-        Get current market regime from database.
-        
-        Args:
-            db_connection: Database connection
-            
-        Returns:
-            Current regime status or None
-        """
-        try:
-            with db_connection.cursor() as cursor:
-                cursor.execute("""
-                    SELECT regime_status FROM market_regime
-                    ORDER BY trade_date DESC
-                    LIMIT 1
-                """)
-                result = cursor.fetchone()
-                return result[0] if result else None
-        except Exception as e:
-            logger.error(f"Failed to retrieve current regime: {e}")
-            return None
 
 
-def run_phase3(db_connection=None) -> Dict:
+def run_phase3() -> Dict:
     """
     Execute Phase 3: Market Regime Assessment.
     
-    Args:
-        db_connection: Optional database connection
-        
     Returns:
         Dictionary with regime assessment
     """
@@ -338,10 +259,6 @@ def run_phase3(db_connection=None) -> Dict:
     
     # Perform analysis
     regime_data = analyzer.analyze_regime()
-    
-    # Save to database if connection provided
-    if db_connection:
-        analyzer.save_to_database(regime_data, db_connection)
     
     return regime_data
 

@@ -73,10 +73,13 @@ def run_full_pipeline():
         try:
             from data_ingestion.nse_universe_fetcher import run_phase1
             
-            fo_tickers = run_phase1(db_manager.connection if db_manager else None)
+            fo_tickers, df_clean = run_phase1()
             
             if not fo_tickers:
                 raise Exception("Phase 1 failed: No F&O tickers downloaded")
+            
+            if db_manager:
+                db_manager.upsert_fo_universe(df_clean)
             
             results['phases_completed'].append('nse_universe_fetcher')
             logger.info(f"✓ Phase 1 complete: {len(fo_tickers)} F&O tickers")
@@ -94,15 +97,16 @@ def run_full_pipeline():
             import asyncio
             
             fo_ticker_set = set(fo_tickers)
-            survivor_tickers = asyncio.run(run_phase2(
-                fo_tickers=fo_ticker_set,
-                db_connection=db_manager.connection if db_manager else None
+            survivor_tickers, df_filtered = asyncio.run(run_phase2(
+                fo_tickers=fo_ticker_set
             ))
             
             if not survivor_tickers:
                 logger.warning("Phase 2 returned no survivors. Using F&O universe as fallback.")
                 survivor_tickers = fo_tickers
             else:
+                if db_manager:
+                    db_manager.upsert_screener_survivors(df_filtered)
                 results['phases_completed'].append('screener_fundamentals')
                 logger.info(f"✓ Phase 2 complete: {len(survivor_tickers)} survivor stocks")
             
@@ -121,7 +125,10 @@ def run_full_pipeline():
         try:
             from data_ingestion.market_regime_checker import run_phase3
             
-            regime_data = run_phase3(db_manager.connection if db_manager else None)
+            regime_data = run_phase3()
+            
+            if db_manager:
+                db_manager.upsert_market_regime(regime_data)
             
             results['regime_status'] = regime_data.get('regime_status')
             results['phases_completed'].append('market_regime_checker')
