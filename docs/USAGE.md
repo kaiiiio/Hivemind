@@ -20,15 +20,17 @@ The AI layer can be tested without paid APIs. Start with dry-run RSS ingestion:
 
 ```powershell
 python src\ai_layer_cli.py ingest-rss --source "Sample=docs\sample_feed.xml" --ticker ABC --ticker XYZ --dry-run
+python src\ai_layer_cli.py ingest-rss --source-config docs\sample_sources.json --dry-run
 ```
 
-Use a real permitted RSS feed URL when available. Dry-run mode fetches, classifies, and scores events but does not write to Postgres.
+Use a real permitted RSS feed URL when available. Dry-run mode fetches, classifies, resolves tickers/company aliases, and scores events but does not write to Postgres.
 
 To persist RSS events and alerts locally:
 
 ```powershell
 docker compose up -d
 python src\ai_layer_cli.py ingest-rss --source "Sample=docs\sample_feed.xml" --ticker ABC --ticker XYZ
+python src\ai_layer_cli.py ingest-rss --source-config docs\sample_sources.json
 ```
 
 To review stored alerts:
@@ -42,12 +44,14 @@ To run the first deterministic agent triage loop without paid APIs:
 
 ```powershell
 python src\ai_layer_cli.py triage-rss --source "Sample=docs\sample_feed.xml" --ticker ABC --ticker XYZ
+python src\ai_layer_cli.py triage-rss --source-config docs\sample_sources.json
 ```
 
 If you pass a current price, APEX can produce a paper-only `PROCEED` decision when the event has cited evidence, VERA does not veto, and the alert score is high enough:
 
 ```powershell
 python src\ai_layer_cli.py triage-rss --source "Sample=docs\sample_feed.xml" --ticker ABC --ticker XYZ --current-price 100
+python src\ai_layer_cli.py triage-rss --source-config docs\sample_sources.json --current-price 100
 ```
 
 To persist the event, alert, and all four deterministic agent outputs:
@@ -55,12 +59,13 @@ To persist the event, alert, and all four deterministic agent outputs:
 ```powershell
 docker compose up -d
 python src\ai_layer_cli.py triage-rss --source "Sample=docs\sample_feed.xml" --ticker ABC --ticker XYZ --current-price 100 --persist
+python src\ai_layer_cli.py triage-rss --source-config docs\sample_sources.json --current-price 100 --persist
 ```
 
 To also write compact Redis memory and Neo4j graph facts when local services are running:
 
 ```powershell
-python src\ai_layer_cli.py triage-rss --source "Sample=docs\sample_feed.xml" --ticker ABC --ticker XYZ --current-price 100 --persist --remember --graph
+python src\ai_layer_cli.py triage-rss --source-config docs\sample_sources.json --current-price 100 --persist --remember --graph
 ```
 
 To review persisted agent outputs:

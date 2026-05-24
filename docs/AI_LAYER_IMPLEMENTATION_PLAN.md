@@ -99,18 +99,19 @@ This repo now has the first foundation pieces:
 15. CLI review command for persisted agent outputs.
 16. Feedback writer for T2 Redis episodes and mistake memory.
 17. Neo4j graph writer foundation for event/decision facts.
+18. JSON RSS source configuration with ticker and company-alias resolution.
 
 ## Next Implementation Steps
 
-1. Add source-specific RSS/feed configuration for NSE/BSE/SEBI-style feeds and improve ticker mapping.
-2. Add a console/Streamlit alert view backed by the local Postgres tables.
-3. Add Qdrant embedding support only after the basic retrieval tests pass.
-4. Add graph retrieval over the Neo4j event/decision facts.
-5. Add closed-trade feedback writer that updates lessons after paper outcomes are known.
+1. Add a console/Streamlit alert view backed by the local Postgres tables.
+2. Add Qdrant embedding support only after the basic retrieval tests pass.
+3. Add graph retrieval over the Neo4j event/decision facts.
+4. Add closed-trade feedback writer that updates lessons after paper outcomes are known.
+5. Expand from the minimal local loop toward `VEGA`, `QUANTRA`, `LEXA`, and `SECTORA`.
 
 ## Current Completion Estimate
 
-The PDF's full AI layer is roughly 15-20% implemented.
+The PDF's full AI layer is roughly 25-30% implemented.
 
 Completed:
 
@@ -120,10 +121,11 @@ Completed:
 4. First executable local event triage loop with schema-validated agent outputs.
 5. Audit trail for deterministic agent outputs in Postgres.
 6. T2 feedback memory and T5 graph write foundations.
+7. Config-driven RSS source loading and alias-based ticker resolution.
 
 Not complete yet:
 
-1. Real source-specific RSS/feed configuration and ticker mapping quality.
+1. Production-quality source list for real permitted NSE/BSE/SEBI feeds.
 2. Full 7-agent execution loop and debate orchestration.
 3. Qdrant embedding collections and Neo4j graph retrieval.
 4. Closed-trade outcome learning beyond VERA/APEX skip/veto memory.

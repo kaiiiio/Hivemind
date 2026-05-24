@@ -37,6 +37,7 @@ class RSSSource:
     source_type: SourceType = "NEWS"
     default_sector: str | None = None
     tickers: list[str] = field(default_factory=list)
+    company_aliases: dict[str, list[str]] = field(default_factory=dict)
 
 
 class RSSConnector:
@@ -63,7 +64,9 @@ class RSSConnector:
             if not headline:
                 continue
             event_type, severity, sentiment = classify_event(headline, summary)
-            tickers = _resolve_tickers(f"{headline} {summary}", source.tickers)
+            text = f"{headline} {summary}"
+            tickers = _resolve_tickers(text, source.tickers, source.company_aliases)
+            company_names = _resolve_company_names(text, source.company_aliases)
             dedupe_hash = _dedupe_hash(source.name, headline, link)
             events.append(
                 MarketEvent(
@@ -73,6 +76,7 @@ class RSSConnector:
                     source_url=link,
                     published_at=_parse_published(entry),
                     tickers=tickers,
+                    company_names=company_names,
                     sector=source.default_sector,
                     event_type=event_type,
                     headline=headline,
@@ -184,12 +188,35 @@ def _parse_published(entry) -> datetime:
     return datetime.now(timezone.utc)
 
 
-def _resolve_tickers(text: str, known_tickers: Iterable[str]) -> list[str]:
+def _resolve_tickers(
+    text: str,
+    known_tickers: Iterable[str],
+    company_aliases: dict[str, list[str]] | None = None,
+) -> list[str]:
     found = []
     for ticker in known_tickers:
         if re.search(rf"\b{re.escape(ticker)}\b", text, flags=re.IGNORECASE):
             found.append(ticker.upper())
+    for ticker, aliases in (company_aliases or {}).items():
+        if any(_contains_phrase(text, alias) for alias in aliases):
+            found.append(ticker.upper())
     return list(dict.fromkeys(found))
+
+
+def _resolve_company_names(text: str, company_aliases: dict[str, list[str]] | None = None) -> list[str]:
+    names = []
+    for aliases in (company_aliases or {}).values():
+        for alias in aliases:
+            if _contains_phrase(text, alias):
+                names.append(alias)
+                break
+    return list(dict.fromkeys(names))
+
+
+def _contains_phrase(text: str, phrase: str) -> bool:
+    if not phrase:
+        return False
+    return re.search(rf"\b{re.escape(phrase)}\b", text, flags=re.IGNORECASE) is not None
 
 
 def _dedupe_hash(source: str, headline: str, link: str | None) -> str:

@@ -1,0 +1,15 @@
+{
+  "sources": [
+    {
+      "name": "Sample",
+      "url": "docs/sample_feed.xml",
+      "source_type": "NEWS",
+      "sector": "SAMPLE",
+      "tickers": ["ABC", "XYZ"],
+      "company_aliases": {
+        "ABC": ["ABC", "ABC Ltd", "ABC Limited"],
+        "XYZ": ["XYZ", "XYZ Ltd", "XYZ Limited"]
+      }
+    }
+  ]
+}

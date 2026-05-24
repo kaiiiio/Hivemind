@@ -9,6 +9,7 @@ from events.pipeline import EventIngestionPipeline
 from events.repository import EventRepository
 from events.rss_connector import RSSConnector, RSSSource, _parse_entries_with_stdlib, _resolve_tickers
 from events.scoring import alert_from_event, score_event
+from events.source_config import load_rss_sources
 from memory.manager import MemoryManager
 from memory.feedback import FeedbackMemoryWriter
 from memory.redis_store import RedisEpisodicStore
@@ -109,6 +110,12 @@ def test_rss_ticker_resolution_is_exact_symbol_match():
     ]
 
 
+def test_rss_ticker_resolution_uses_company_aliases():
+    assert _resolve_tickers("Alpha Beta Corp receives letter of award", ["XYZ"], {"ABC": ["Alpha Beta Corp"]}) == [
+        "ABC"
+    ]
+
+
 def test_event_pipeline_scores_and_persists_alerts():
     event = MarketEvent(
         event_id="evt1",
@@ -163,6 +170,47 @@ def test_rss_connector_can_read_local_feed_file(tmp_path):
     events = RSSConnector([RSSSource("Local", str(feed), tickers=["ABC"])]).fetch_events()
     assert events[0].tickers == ["ABC"]
     assert events[0].event_type == "ORDER_WIN"
+
+
+def test_rss_connector_populates_company_names_from_aliases(tmp_path):
+    feed = tmp_path / "feed.xml"
+    feed.write_text(
+        """<rss><channel><item>
+        <title>Alpha Beta Corp wins order</title>
+        <description>Letter of award received.</description>
+        </item></channel></rss>""",
+        encoding="utf-8",
+    )
+    source = RSSSource(
+        "Local",
+        str(feed),
+        tickers=[],
+        company_aliases={"ABC": ["Alpha Beta Corp", "ABC Ltd"]},
+    )
+    events = RSSConnector([source]).fetch_events()
+    assert events[0].tickers == ["ABC"]
+    assert events[0].company_names == ["Alpha Beta Corp"]
+
+
+def test_load_rss_sources_from_json_config(tmp_path):
+    config = tmp_path / "sources.json"
+    config.write_text(
+        """{
+          "sources": [{
+            "name": "Local",
+            "url": "docs/sample_feed.xml",
+            "source_type": "NEWS",
+            "sector": "PHARMA",
+            "tickers": ["abc"],
+            "company_aliases": {"abc": ["Alpha Beta Corp"]}
+          }]
+        }""",
+        encoding="utf-8",
+    )
+    sources = load_rss_sources(config)
+    assert sources[0].name == "Local"
+    assert sources[0].tickers == ["ABC"]
+    assert sources[0].company_aliases == {"ABC": ["Alpha Beta Corp"]}
 
 
 def test_local_agent_loop_blocks_uncited_trade_recommendations():

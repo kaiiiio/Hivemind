@@ -17,6 +17,7 @@ from events.pipeline import EventIngestionPipeline
 from events.repository import EventRepository
 from events.rss_connector import RSSConnector, RSSSource
 from events.scoring import alert_from_event, score_event
+from events.source_config import load_rss_sources
 from agents.local_loop import run_local_event_loop
 from agents.repository import AgentOutputRepository
 from graph.neo4j_writer import KnowledgeGraphWriter
@@ -51,7 +52,8 @@ def main(argv: list[str] | None = None) -> int:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     ingest = subparsers.add_parser("ingest-rss", help="Fetch RSS feeds, score events, and optionally persist alerts")
-    ingest.add_argument("--source", action="append", required=True, help="RSS source as NAME=URL. Can be repeated.")
+    ingest.add_argument("--source", action="append", help="RSS source as NAME=URL. Can be repeated.")
+    ingest.add_argument("--source-config", help="Local JSON file with RSS sources, tickers, and company aliases.")
     ingest.add_argument("--source-type", default="NEWS", choices=["EXCHANGE", "REGULATOR", "NEWS", "COMPANY", "SOCIAL"])
     ingest.add_argument("--ticker", action="append", default=[], help="Known ticker symbol for exact matching. Can be repeated.")
     ingest.add_argument("--sector", default=None, help="Optional sector tag applied to all events from this run.")
@@ -71,7 +73,8 @@ def main(argv: list[str] | None = None) -> int:
     mistakes.add_argument("--limit", type=int, default=5)
 
     triage = subparsers.add_parser("triage-rss", help="Run deterministic SENTINEL/NYSA/VERA/APEX triage on RSS events")
-    triage.add_argument("--source", action="append", required=True, help="RSS source as NAME=URL. Can be repeated.")
+    triage.add_argument("--source", action="append", help="RSS source as NAME=URL. Can be repeated.")
+    triage.add_argument("--source-config", help="Local JSON file with RSS sources, tickers, and company aliases.")
     triage.add_argument("--source-type", default="NEWS", choices=["EXCHANGE", "REGULATOR", "NEWS", "COMPANY", "SOCIAL"])
     triage.add_argument("--ticker", action="append", default=[], help="Known ticker symbol for exact matching. Can be repeated.")
     triage.add_argument("--sector", default=None)
@@ -95,7 +98,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def ingest_rss(args: argparse.Namespace) -> int:
-    sources = [_parse_source(raw, args.source_type, args.sector, args.ticker) for raw in args.source]
+    sources = _sources_from_args(args)
     connector = RSSConnector(sources)
 
     if args.dry_run:
@@ -180,7 +183,7 @@ def list_mistakes(args: argparse.Namespace) -> int:
 
 
 def triage_rss(args: argparse.Namespace) -> int:
-    sources = [_parse_source(raw, args.source_type, args.sector, args.ticker) for raw in args.source]
+    sources = _sources_from_args(args)
     events = RSSConnector(sources).fetch_events()
     print(f"Fetched {len(events)} events")
     db = None
@@ -283,6 +286,17 @@ def _parse_source(raw: str, source_type: str, sector: str | None, tickers: list[
         default_sector=sector,
         tickers=[ticker.upper() for ticker in tickers],
     )
+
+
+def _sources_from_args(args: argparse.Namespace) -> list[RSSSource]:
+    sources: list[RSSSource] = []
+    if getattr(args, "source_config", None):
+        sources.extend(load_rss_sources(args.source_config))
+    for raw in getattr(args, "source", None) or []:
+        sources.append(_parse_source(raw, args.source_type, args.sector, args.ticker))
+    if not sources:
+        raise SystemExit("Provide --source NAME=URL or --source-config path.json")
+    return sources
 
 
 def _format_alert_line(level: str, score: float, tickers: list[str], headline: str) -> str:
