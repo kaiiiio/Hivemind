@@ -45,17 +45,28 @@ cp config/.env.example .env
 # - DB_HOST, DB_PORT, DB_NAME, etc. (for TimescaleDB)
 ```
 
-## 4. Database Infrastructure
+## 4. Local Infrastructure
 
-The system uses TimescaleDB for time-series data storage.
+The system uses local, zero-cost Docker services for development:
+
+- TimescaleDB/Postgres for market data, agent outputs, events, and procedures.
+- Redis for recent episodic memory and mistake logs.
+- Qdrant for local vector memory.
+- Neo4j Community for graph memory.
 
 ```bash
-# Start the database container
-docker-compose up -d timescaledb
+# Start all local services
+docker-compose up -d
 
-# Verify the container is running
+# Verify containers are running
 docker-compose ps
 ```
+
+Useful local URLs:
+
+- Qdrant REST: `http://localhost:6333`
+- Neo4j browser: `http://localhost:7474` (`neo4j` / `hivemind`)
+Redis runs on `localhost:6379`.
 
 ## 5. Maintenance
 Keep your environment up to date by periodically running:

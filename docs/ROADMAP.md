@@ -24,10 +24,14 @@ The foundation of the system is built, focusing on high-quality data acquisition
 
 ## Future Roadmap
 
-### Phase 2: Signal Generation (In Progress)
-- [ ] Implement technical indicator agent.
-- [ ] Develop sentiment analysis agent for news and social media.
-- [ ] Build a "Debate Protocol" for agent consensus.
+### Phase 2: AI Layer Foundation (In Progress)
+- [x] Add local Redis, Qdrant, and Neo4j services for zero-cost memory infrastructure.
+- [x] Add procedural memory, market event, and alert tables.
+- [x] Add Memory Manager, agent schemas, RRF fusion, and alert scoring foundations.
+- [ ] Implement Postgres full-text retrieval over events and agent outputs.
+- [ ] Build event ingestion connectors before the full 7-agent swarm.
+- [ ] Implement the first useful loop: `SENTINEL -> NYSA -> VERA -> APEX`.
+- [ ] Expand to VEGA, QUANTRA, LEXA, and SECTORA after retrieval quality is measurable.
 
 ### Phase 3: Execution & Risk Management
 - [ ] Broker API integration.

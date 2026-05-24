@@ -14,6 +14,44 @@ cd src
 python data_ingestion/master_pipeline.py
 ```
 
+## Running The Free AI Layer
+
+The AI layer can be tested without paid APIs. Start with dry-run RSS ingestion:
+
+```powershell
+python src\ai_layer_cli.py ingest-rss --source "Sample=docs\sample_feed.xml" --ticker ABC --ticker XYZ --dry-run
+```
+
+Use a real permitted RSS feed URL when available. Dry-run mode fetches, classifies, and scores events but does not write to Postgres.
+
+To persist RSS events and alerts locally:
+
+```powershell
+docker compose up -d
+python src\ai_layer_cli.py ingest-rss --source "Sample=docs\sample_feed.xml" --ticker ABC --ticker XYZ
+```
+
+To review stored alerts:
+
+```powershell
+python src\ai_layer_cli.py alerts --limit 20
+python src\ai_layer_cli.py alerts --status ALL --limit 50
+```
+
+To run the first deterministic agent triage loop without paid APIs:
+
+```powershell
+python src\ai_layer_cli.py triage-rss --source "Sample=docs\sample_feed.xml" --ticker ABC --ticker XYZ
+```
+
+If you pass a current price, APEX can produce a paper-only `PROCEED` decision when the event has cited evidence, VERA does not veto, and the alert score is high enough:
+
+```powershell
+python src\ai_layer_cli.py triage-rss --source "Sample=docs\sample_feed.xml" --ticker ABC --ticker XYZ --current-price 100
+```
+
+All of the above uses local Docker/Postgres and deterministic rules. No paid model provider is required.
+
 ### What happens when you run it?
 1. **Universe Sync**: Updates the list of F&O stocks.
 2. **Fundamental Scan**: Scrapes and updates fundamental metrics for the universe.

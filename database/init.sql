@@ -74,6 +74,7 @@ CREATE TABLE IF NOT EXISTS daily_prices (
 SELECT create_hypertable('daily_prices', 'time', if_not_exists => TRUE);
 
 -- Create indexes for common queries
+CREATE UNIQUE INDEX IF NOT EXISTS idx_daily_prices_unique ON daily_prices(time, ticker);
 CREATE INDEX IF NOT EXISTS idx_daily_prices_ticker ON daily_prices(ticker, time DESC);
 CREATE INDEX IF NOT EXISTS idx_daily_prices_time ON daily_prices(time DESC);
 
@@ -97,6 +98,7 @@ CREATE TABLE IF NOT EXISTS delivery_data (
 SELECT create_hypertable('delivery_data', 'time', if_not_exists => TRUE);
 
 -- Create indexes
+CREATE UNIQUE INDEX IF NOT EXISTS idx_delivery_data_unique ON delivery_data(time, ticker);
 CREATE INDEX IF NOT EXISTS idx_delivery_data_ticker ON delivery_data(ticker, time DESC);
 CREATE INDEX IF NOT EXISTS idx_delivery_data_time ON delivery_data(time DESC);
 
@@ -152,6 +154,76 @@ CREATE TABLE IF NOT EXISTS agent_outputs (
 -- Index for agent performance tracking
 CREATE INDEX IF NOT EXISTS idx_agent_outputs_run_date ON agent_outputs(run_date DESC);
 CREATE INDEX IF NOT EXISTS idx_agent_outputs_agent ON agent_outputs(agent_name);
+CREATE INDEX IF NOT EXISTS idx_agent_outputs_text_search
+    ON agent_outputs USING gin(to_tsvector('english', coalesce(output_data::text, '')));
+
+-- ============================================
+-- PROCEDURAL MEMORY (Layer 2 - T4)
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS agent_procedures (
+    agent_name VARCHAR(30) NOT NULL,
+    sector VARCHAR(60) NOT NULL,
+    procedure_key VARCHAR(100) NOT NULL,
+    procedure_value JSONB NOT NULL,
+    confidence NUMERIC DEFAULT 0,
+    sample_size INTEGER DEFAULT 0,
+    last_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    version INTEGER DEFAULT 1,
+    PRIMARY KEY (agent_name, sector, procedure_key, version)
+);
+
+CREATE INDEX IF NOT EXISTS idx_agent_procedures_lookup
+    ON agent_procedures(agent_name, sector, procedure_key, version DESC);
+
+-- ============================================
+-- MARKET EVENTS + ALERTS (Sprint 0)
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS market_events (
+    event_id TEXT PRIMARY KEY,
+    source TEXT NOT NULL,
+    source_type TEXT NOT NULL,
+    source_url TEXT,
+    published_at TIMESTAMPTZ NOT NULL,
+    fetched_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    tickers TEXT[] NOT NULL DEFAULT '{}',
+    company_names TEXT[] NOT NULL DEFAULT '{}',
+    sector TEXT,
+    event_type TEXT NOT NULL,
+    headline TEXT NOT NULL,
+    summary TEXT,
+    raw_text TEXT,
+    document_url TEXT,
+    severity NUMERIC NOT NULL DEFAULT 0,
+    sentiment NUMERIC DEFAULT 0,
+    confidence NUMERIC NOT NULL DEFAULT 0,
+    requires_confirmation BOOLEAN NOT NULL DEFAULT FALSE,
+    dedupe_hash TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_market_events_tickers ON market_events USING gin(tickers);
+CREATE INDEX IF NOT EXISTS idx_market_events_published_at ON market_events(published_at DESC);
+CREATE INDEX IF NOT EXISTS idx_market_events_type ON market_events(event_type);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_market_events_dedupe ON market_events(dedupe_hash);
+CREATE INDEX IF NOT EXISTS idx_market_events_text_search
+    ON market_events USING gin(to_tsvector('english', headline || ' ' || coalesce(summary, '') || ' ' || coalesce(raw_text, '')));
+
+CREATE TABLE IF NOT EXISTS alerts (
+    alert_id TEXT PRIMARY KEY,
+    event_id TEXT REFERENCES market_events(event_id),
+    ticker TEXT,
+    alert_level TEXT NOT NULL CHECK (alert_level IN ('INFO', 'WATCH', 'INVESTIGATE', 'HIGH_ALERT', 'TRADE_CANDIDATE', 'BLOCKED')),
+    alert_score NUMERIC NOT NULL,
+    reason TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN', 'ACKNOWLEDGED', 'CLOSED')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    acknowledged_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX IF NOT EXISTS idx_alerts_status_score ON alerts(status, alert_score DESC);
+CREATE INDEX IF NOT EXISTS idx_alerts_ticker ON alerts(ticker);
 
 -- ============================================
 -- FINAL TARGETS (Layer 3 - Aggregated signals)

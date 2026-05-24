@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>HIVEMIND Sample Market Feed</title>
+    <link>https://example.com/hivemind</link>
+    <description>Local sample feed for deterministic AI-layer testing.</description>
+    <item>
+      <title>ABC receives USFDA warning letter</title>
+      <description>Company disclosure says ABC received a USFDA warning letter after inspection.</description>
+      <link>https://example.com/disclosures/abc-usfda-warning</link>
+      <pubDate>Wed, 20 May 2026 09:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>XYZ receives letter of award for large order win</title>
+      <description>XYZ announced a new contract awarded by a domestic customer.</description>
+      <link>https://example.com/disclosures/xyz-order-win</link>
+      <pubDate>Wed, 20 May 2026 10:00:00 GMT</pubDate>
+    </item>
+  </channel>
+</rss>

@@ -23,6 +23,7 @@ python-dotenv==1.0.0
 
 # HTTP Requests
 requests==2.31.0
+feedparser==6.0.11
 
 # ============================================
 # AI AGENTS (Week 2-3) - Add as needed
@@ -47,6 +48,13 @@ requests==2.31.0
 
 # ChromaDB (local, no key needed)
 chromadb==0.4.22
+
+# Local/free AI memory infrastructure
+redis==5.0.1
+qdrant-client==1.7.3
+neo4j==5.16.0
+rank-bm25==0.2.2
+pydantic==2.12.2
 
 # Qdrant (cloud option)
 # qdrant-client==1.7.0
