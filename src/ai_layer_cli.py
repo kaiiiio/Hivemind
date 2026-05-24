@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -17,6 +18,7 @@ from events.repository import EventRepository
 from events.rss_connector import RSSConnector, RSSSource
 from events.scoring import alert_from_event, score_event
 from agents.local_loop import run_local_event_loop
+from agents.repository import AgentOutputRepository
 
 
 @dataclass(slots=True)
@@ -28,6 +30,17 @@ class AlertRow:
     reason: str
     status: str
     created_at: str
+
+
+@dataclass(slots=True)
+class AgentOutputRow:
+    created_at: str
+    agent_name: str
+    ticker: str | None
+    output_type: str
+    confidence_score: float | None
+    model_used: str | None
+    output_data: str
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -45,18 +58,26 @@ def main(argv: list[str] | None = None) -> int:
     alerts.add_argument("--limit", type=int, default=20)
     alerts.add_argument("--status", default="OPEN", choices=["OPEN", "ACKNOWLEDGED", "CLOSED", "ALL"])
 
+    outputs = subparsers.add_parser("agent-outputs", help="List recent persisted agent outputs from local Postgres")
+    outputs.add_argument("--limit", type=int, default=20)
+    outputs.add_argument("--agent", default=None, help="Optional agent filter, e.g. APEX or VERA.")
+    outputs.add_argument("--ticker", default=None, help="Optional ticker filter.")
+
     triage = subparsers.add_parser("triage-rss", help="Run deterministic SENTINEL/NYSA/VERA/APEX triage on RSS events")
     triage.add_argument("--source", action="append", required=True, help="RSS source as NAME=URL. Can be repeated.")
     triage.add_argument("--source-type", default="NEWS", choices=["EXCHANGE", "REGULATOR", "NEWS", "COMPANY", "SOCIAL"])
     triage.add_argument("--ticker", action="append", default=[], help="Known ticker symbol for exact matching. Can be repeated.")
     triage.add_argument("--sector", default=None)
     triage.add_argument("--current-price", type=float, default=None, help="Optional current price for paper-only APEX R:R template.")
+    triage.add_argument("--persist", action="store_true", help="Persist events, alerts, and agent outputs to local Postgres.")
 
     args = parser.parse_args(argv)
     if args.command == "ingest-rss":
         return ingest_rss(args)
     if args.command == "alerts":
         return list_alerts(args)
+    if args.command == "agent-outputs":
+        return list_agent_outputs(args)
     if args.command == "triage-rss":
         return triage_rss(args)
     return 2
@@ -107,13 +128,61 @@ def list_alerts(args: argparse.Namespace) -> int:
     return 0
 
 
+def list_agent_outputs(args: argparse.Namespace) -> int:
+    db = DatabaseManager()
+    if not db.connect():
+        print("Database connection failed. Start Docker before listing agent outputs.", file=sys.stderr)
+        return 1
+
+    try:
+        rows = _fetch_agent_outputs(db.connection, args.limit, args.agent, args.ticker)
+    finally:
+        db.disconnect()
+
+    if not rows:
+        print("No agent outputs found.")
+        return 0
+
+    for row in rows:
+        ticker = row.ticker or "-"
+        confidence = "-" if row.confidence_score is None else f"{row.confidence_score:.2f}"
+        summary = row.output_data.replace("\n", " ")[:180]
+        print(
+            f"{row.created_at} | {row.agent_name:<8} | {ticker:<10} | "
+            f"{confidence:<5} | {row.output_type:<12} | {summary}"
+        )
+    return 0
+
+
 def triage_rss(args: argparse.Namespace) -> int:
     sources = [_parse_source(raw, args.source_type, args.sector, args.ticker) for raw in args.source]
     events = RSSConnector(sources).fetch_events()
     print(f"Fetched {len(events)} events")
+    db = None
+    event_repository = None
+    output_repository = None
+    if args.persist:
+        db = DatabaseManager()
+        if not db.connect():
+            print("Database connection failed. Start Docker or omit --persist.", file=sys.stderr)
+            return 1
+        event_repository = EventRepository(db.connection)
+        output_repository = AgentOutputRepository(db.connection)
+
+    persisted_pairs = 0
+    persisted_outputs = 0
     for event in events:
         alert = alert_from_event(event, score_event(event))
+        started_at = time.perf_counter()
         run = run_local_event_loop(event, alert, current_price=args.current_price)
+        if event_repository and event_repository.upsert_event_and_alert(event, alert):
+            persisted_pairs += 1
+        if output_repository:
+            persisted_outputs += output_repository.insert_local_agent_run(
+                run,
+                ticker=event.tickers[0] if event.tickers else None,
+                started_at=started_at,
+            )
         ticker = ",".join(event.tickers) if event.tickers else "-"
         print(
             f"{ticker:<12} | {alert.alert_level:<12} | APEX={run.apex.decision:<7} | "
@@ -121,6 +190,9 @@ def triage_rss(args: argparse.Namespace) -> int:
         )
         if run.vera.veto_reason:
             print(f"  VERA: {run.vera.veto_reason}")
+    if db:
+        db.disconnect()
+        print(f"Persisted {persisted_pairs} event/alert pairs and {persisted_outputs} agent outputs")
     return 0
 
 
@@ -135,6 +207,25 @@ def _fetch_alerts(connection, limit: int, status: str | None) -> list[AlertRow]:
     with connection.cursor() as cursor:
         cursor.execute(sql, (status, status, limit))
         return [AlertRow(*row) for row in cursor.fetchall()]
+
+
+def _fetch_agent_outputs(
+    connection,
+    limit: int,
+    agent_name: str | None = None,
+    ticker: str | None = None,
+) -> list[AgentOutputRow]:
+    sql = """
+        SELECT created_at::text, agent_name, ticker, output_type, confidence_score, model_used, output_data::text
+        FROM agent_outputs
+        WHERE (%s IS NULL OR agent_name = upper(%s))
+          AND (%s IS NULL OR ticker = upper(%s))
+        ORDER BY created_at DESC
+        LIMIT %s
+    """
+    with connection.cursor() as cursor:
+        cursor.execute(sql, (agent_name, agent_name, ticker, ticker, limit))
+        return [AgentOutputRow(*row) for row in cursor.fetchall()]
 
 
 def _parse_source(raw: str, source_type: str, sector: str | None, tickers: list[str]) -> RSSSource:

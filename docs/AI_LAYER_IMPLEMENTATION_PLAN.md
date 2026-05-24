@@ -95,14 +95,16 @@ This repo now has the first foundation pieces:
 11. Event repository and ingestion pipeline that scores/persists alerts.
 12. Free/local CLI for RSS ingestion, alert review, and deterministic event triage.
 13. First deterministic `SENTINEL -> NYSA -> VERA -> APEX` loop.
+14. Deterministic triage output persistence into `agent_outputs`.
+15. CLI review command for persisted agent outputs.
 
 ## Next Implementation Steps
 
 1. Add source-specific RSS/feed configuration for NSE/BSE/SEBI-style feeds and improve ticker mapping.
-2. Persist deterministic agent triage outputs into `agent_outputs`.
-3. Add a console/Streamlit alert view backed by the local Postgres tables.
-4. Add Qdrant embedding support only after the basic retrieval tests pass.
-5. Add Neo4j graph writer for confirmed events and paper decisions.
+2. Add a console/Streamlit alert view backed by the local Postgres tables.
+3. Add Qdrant embedding support only after the basic retrieval tests pass.
+4. Add Neo4j graph writer for confirmed events and paper decisions.
+5. Add feedback writer that turns VERA vetoes and closed paper trades into mistake memory.
 
 ## Current Completion Estimate
 
@@ -114,6 +116,7 @@ Completed:
 2. Sprint 1 foundation: local Redis/Qdrant/Neo4j/Postgres Docker plan and Redis fallback memory.
 3. Sprint 2 foundation: query rewrite, RRF fusion, compression, and Postgres full-text retrieval.
 4. First executable local event triage loop with schema-validated agent outputs.
+5. Audit trail for deterministic agent outputs in Postgres.
 
 Not complete yet:
 
@@ -121,4 +124,4 @@ Not complete yet:
 2. Full 7-agent execution loop and debate orchestration.
 3. Qdrant embedding collections and Neo4j graph writers.
 4. Feedback/mistake learning beyond Redis storage primitives.
-5. UI/console workflow for reviewing alerts and paper decisions.
+5. UI workflow for reviewing alerts and paper decisions.

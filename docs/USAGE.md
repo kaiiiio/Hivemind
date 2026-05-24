@@ -50,6 +50,21 @@ If you pass a current price, APEX can produce a paper-only `PROCEED` decision wh
 python src\ai_layer_cli.py triage-rss --source "Sample=docs\sample_feed.xml" --ticker ABC --ticker XYZ --current-price 100
 ```
 
+To persist the event, alert, and all four deterministic agent outputs:
+
+```powershell
+docker compose up -d
+python src\ai_layer_cli.py triage-rss --source "Sample=docs\sample_feed.xml" --ticker ABC --ticker XYZ --current-price 100 --persist
+```
+
+To review persisted agent outputs:
+
+```powershell
+python src\ai_layer_cli.py agent-outputs --limit 20
+python src\ai_layer_cli.py agent-outputs --agent APEX --limit 10
+python src\ai_layer_cli.py agent-outputs --ticker ABC --limit 10
+```
+
 All of the above uses local Docker/Postgres and deterministic rules. No paid model provider is required.
 
 ### What happens when you run it?

@@ -1,6 +1,7 @@
 import asyncio
 
 from agents.local_loop import run_local_event_loop
+from agents.repository import AgentOutputRepository
 from agents.schemas import NysaOutput
 from events.classifier import classify_event
 from events.models import MarketEvent
@@ -205,6 +206,36 @@ def test_local_agent_loop_can_create_paper_proceed_with_evidence_and_price():
     assert run.apex.target_price == 110
 
 
+def test_agent_output_repository_persists_four_local_agent_outputs():
+    event = MarketEvent(
+        event_id="evt1",
+        source="NSE",
+        source_type="EXCHANGE",
+        source_url="https://example.com/disclosure",
+        published_at="2026-05-20T09:00:00Z",
+        tickers=["ABC"],
+        event_type="ORDER_WIN",
+        headline="ABC receives a large order win",
+        severity=0.7,
+        sentiment=0.45,
+        confidence=0.9,
+        dedupe_hash="abc",
+    )
+    alert = alert_from_event(event, 0.82)
+    run = run_local_event_loop(event, alert, current_price=100)
+    connection = FakeWritableConnection()
+    count = AgentOutputRepository(connection).insert_local_agent_run(run, ticker="ABC")
+    assert count == 4
+    assert connection.commits == 1
+    assert [params["agent_name"] for _, params in connection.cursor_obj.executed] == [
+        "SENTINEL",
+        "NYSA",
+        "VERA",
+        "APEX",
+    ]
+    assert all(params["output_data"].startswith("{") for _, params in connection.cursor_obj.executed)
+
+
 class FakeCursor:
     def __init__(self, rows):
         self.rows = rows
@@ -229,6 +260,19 @@ class FakeConnection:
 
     def cursor(self):
         return self.cursor_obj
+
+
+class FakeWritableConnection(FakeConnection):
+    def __init__(self):
+        super().__init__([])
+        self.commits = 0
+        self.rollbacks = 0
+
+    def commit(self):
+        self.commits += 1
+
+    def rollback(self):
+        self.rollbacks += 1
 
 
 class FakeConnector:
