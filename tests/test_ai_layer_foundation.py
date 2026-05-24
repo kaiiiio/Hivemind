@@ -10,6 +10,9 @@ from events.repository import EventRepository
 from events.rss_connector import RSSConnector, RSSSource, _parse_entries_with_stdlib, _resolve_tickers
 from events.scoring import alert_from_event, score_event
 from memory.manager import MemoryManager
+from memory.feedback import FeedbackMemoryWriter
+from memory.redis_store import RedisEpisodicStore
+from graph.neo4j_writer import KnowledgeGraphWriter
 from retrieval.fusion import RetrievalDocument, rrf_fusion
 from retrieval.postgres import PostgresFullTextRetriever
 from swarm.validator import should_debate
@@ -236,6 +239,57 @@ def test_agent_output_repository_persists_four_local_agent_outputs():
     assert all(params["output_data"].startswith("{") for _, params in connection.cursor_obj.executed)
 
 
+def test_feedback_writer_records_episode_and_mistakes():
+    event = MarketEvent(
+        event_id="evt1",
+        source="NSE",
+        source_type="EXCHANGE",
+        source_url="https://example.com/disclosure",
+        published_at="2026-05-20T09:00:00Z",
+        tickers=["ABC"],
+        event_type="USFDA_ALERT",
+        headline="ABC receives USFDA warning letter",
+        severity=0.85,
+        sentiment=-0.7,
+        confidence=0.9,
+        dedupe_hash="abc",
+    )
+    alert = alert_from_event(event, 0.82)
+    run = run_local_event_loop(event, alert, current_price=100)
+    store = RedisEpisodicStore(redis_url="redis://invalid-local-test:6379/0")
+    result = FeedbackMemoryWriter(store).write_event_triage(event, alert, run, run_id="run1")
+    assert result.episode_key == "episode:ABC:run1"
+    assert result.mistakes_written == 2
+    assert store.read_recent_ticker_episodes("ABC", limit=1)[0]["decision"] == "SKIP"
+    assert store.read_mistakes("VERA", limit=1)[0]["error_type"] == "VETOED_RISK"
+    assert store.read_mistakes("APEX", limit=1)[0]["error_type"] == "SKIPPED_SETUP"
+
+
+def test_graph_writer_writes_event_decision_nodes():
+    event = MarketEvent(
+        event_id="evt1",
+        source="NSE",
+        source_type="EXCHANGE",
+        source_url="https://example.com/disclosure",
+        published_at="2026-05-20T09:00:00Z",
+        tickers=["ABC"],
+        event_type="ORDER_WIN",
+        headline="ABC receives a large order win",
+        severity=0.7,
+        sentiment=0.45,
+        confidence=0.9,
+        dedupe_hash="abc",
+    )
+    alert = alert_from_event(event, 0.82)
+    run = run_local_event_loop(event, alert, current_price=100)
+    driver = FakeNeo4jDriver()
+    assert KnowledgeGraphWriter(driver).write_event_decision(event, alert, run)
+    query, params = driver.session_obj.runs[0]
+    assert "MERGE (s:Stock" in query
+    assert params["symbol"] == "ABC"
+    assert params["decision"] == "PROCEED"
+
+
 class FakeCursor:
     def __init__(self, rows):
         self.rows = rows
@@ -299,3 +353,29 @@ class FakeRepository(EventRepository):
     def upsert_event_and_alert(self, event, alert):
         self.saved.append((event, alert))
         return True
+
+
+class FakeNeo4jSession:
+    def __init__(self):
+        self.runs = []
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+    def run(self, query, **parameters):
+        self.runs.append((query, parameters))
+
+
+class FakeNeo4jDriver:
+    def __init__(self):
+        self.session_obj = FakeNeo4jSession()
+        self.closed = False
+
+    def session(self):
+        return self.session_obj
+
+    def close(self):
+        self.closed = True

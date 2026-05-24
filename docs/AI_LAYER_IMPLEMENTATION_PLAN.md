@@ -97,14 +97,16 @@ This repo now has the first foundation pieces:
 13. First deterministic `SENTINEL -> NYSA -> VERA -> APEX` loop.
 14. Deterministic triage output persistence into `agent_outputs`.
 15. CLI review command for persisted agent outputs.
+16. Feedback writer for T2 Redis episodes and mistake memory.
+17. Neo4j graph writer foundation for event/decision facts.
 
 ## Next Implementation Steps
 
 1. Add source-specific RSS/feed configuration for NSE/BSE/SEBI-style feeds and improve ticker mapping.
 2. Add a console/Streamlit alert view backed by the local Postgres tables.
 3. Add Qdrant embedding support only after the basic retrieval tests pass.
-4. Add Neo4j graph writer for confirmed events and paper decisions.
-5. Add feedback writer that turns VERA vetoes and closed paper trades into mistake memory.
+4. Add graph retrieval over the Neo4j event/decision facts.
+5. Add closed-trade feedback writer that updates lessons after paper outcomes are known.
 
 ## Current Completion Estimate
 
@@ -117,11 +119,12 @@ Completed:
 3. Sprint 2 foundation: query rewrite, RRF fusion, compression, and Postgres full-text retrieval.
 4. First executable local event triage loop with schema-validated agent outputs.
 5. Audit trail for deterministic agent outputs in Postgres.
+6. T2 feedback memory and T5 graph write foundations.
 
 Not complete yet:
 
 1. Real source-specific RSS/feed configuration and ticker mapping quality.
 2. Full 7-agent execution loop and debate orchestration.
-3. Qdrant embedding collections and Neo4j graph writers.
-4. Feedback/mistake learning beyond Redis storage primitives.
+3. Qdrant embedding collections and Neo4j graph retrieval.
+4. Closed-trade outcome learning beyond VERA/APEX skip/veto memory.
 5. UI workflow for reviewing alerts and paper decisions.

@@ -57,12 +57,25 @@ docker compose up -d
 python src\ai_layer_cli.py triage-rss --source "Sample=docs\sample_feed.xml" --ticker ABC --ticker XYZ --current-price 100 --persist
 ```
 
+To also write compact Redis memory and Neo4j graph facts when local services are running:
+
+```powershell
+python src\ai_layer_cli.py triage-rss --source "Sample=docs\sample_feed.xml" --ticker ABC --ticker XYZ --current-price 100 --persist --remember --graph
+```
+
 To review persisted agent outputs:
 
 ```powershell
 python src\ai_layer_cli.py agent-outputs --limit 20
 python src\ai_layer_cli.py agent-outputs --agent APEX --limit 10
 python src\ai_layer_cli.py agent-outputs --ticker ABC --limit 10
+```
+
+To review Redis mistake memory:
+
+```powershell
+python src\ai_layer_cli.py mistakes --agent VERA --limit 10
+python src\ai_layer_cli.py mistakes --agent APEX --limit 10
 ```
 
 All of the above uses local Docker/Postgres and deterministic rules. No paid model provider is required.

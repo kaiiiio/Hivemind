@@ -19,6 +19,9 @@ from events.rss_connector import RSSConnector, RSSSource
 from events.scoring import alert_from_event, score_event
 from agents.local_loop import run_local_event_loop
 from agents.repository import AgentOutputRepository
+from graph.neo4j_writer import KnowledgeGraphWriter
+from memory.feedback import FeedbackMemoryWriter
+from memory.redis_store import RedisEpisodicStore
 
 
 @dataclass(slots=True)
@@ -63,6 +66,10 @@ def main(argv: list[str] | None = None) -> int:
     outputs.add_argument("--agent", default=None, help="Optional agent filter, e.g. APEX or VERA.")
     outputs.add_argument("--ticker", default=None, help="Optional ticker filter.")
 
+    mistakes = subparsers.add_parser("mistakes", help="List recent Redis/fallback mistake memory for an agent")
+    mistakes.add_argument("--agent", required=True, help="Agent name, e.g. APEX or VERA.")
+    mistakes.add_argument("--limit", type=int, default=5)
+
     triage = subparsers.add_parser("triage-rss", help="Run deterministic SENTINEL/NYSA/VERA/APEX triage on RSS events")
     triage.add_argument("--source", action="append", required=True, help="RSS source as NAME=URL. Can be repeated.")
     triage.add_argument("--source-type", default="NEWS", choices=["EXCHANGE", "REGULATOR", "NEWS", "COMPANY", "SOCIAL"])
@@ -70,6 +77,8 @@ def main(argv: list[str] | None = None) -> int:
     triage.add_argument("--sector", default=None)
     triage.add_argument("--current-price", type=float, default=None, help="Optional current price for paper-only APEX R:R template.")
     triage.add_argument("--persist", action="store_true", help="Persist events, alerts, and agent outputs to local Postgres.")
+    triage.add_argument("--remember", action="store_true", help="Write compact episode and mistake memory to Redis when available.")
+    triage.add_argument("--graph", action="store_true", help="Write event and decision facts to local Neo4j when available.")
 
     args = parser.parse_args(argv)
     if args.command == "ingest-rss":
@@ -78,6 +87,8 @@ def main(argv: list[str] | None = None) -> int:
         return list_alerts(args)
     if args.command == "agent-outputs":
         return list_agent_outputs(args)
+    if args.command == "mistakes":
+        return list_mistakes(args)
     if args.command == "triage-rss":
         return triage_rss(args)
     return 2
@@ -154,6 +165,20 @@ def list_agent_outputs(args: argparse.Namespace) -> int:
     return 0
 
 
+def list_mistakes(args: argparse.Namespace) -> int:
+    store = RedisEpisodicStore()
+    mistakes = store.read_mistakes(args.agent.upper(), limit=args.limit)
+    if not mistakes:
+        print(f"No mistake memory found for {args.agent.upper()}.")
+        return 0
+    for item in mistakes:
+        ticker = item.get("ticker") or "-"
+        error_type = item.get("error_type", "UNKNOWN")
+        description = item.get("description", "")
+        print(f"{args.agent.upper():<8} | {ticker:<10} | {error_type:<16} | {description}")
+    return 0
+
+
 def triage_rss(args: argparse.Namespace) -> int:
     sources = [_parse_source(raw, args.source_type, args.sector, args.ticker) for raw in args.source]
     events = RSSConnector(sources).fetch_events()
@@ -161,6 +186,8 @@ def triage_rss(args: argparse.Namespace) -> int:
     db = None
     event_repository = None
     output_repository = None
+    memory_writer = FeedbackMemoryWriter() if args.remember else None
+    graph_writer = KnowledgeGraphWriter() if args.graph else None
     if args.persist:
         db = DatabaseManager()
         if not db.connect():
@@ -171,6 +198,9 @@ def triage_rss(args: argparse.Namespace) -> int:
 
     persisted_pairs = 0
     persisted_outputs = 0
+    memory_episodes = 0
+    memory_mistakes = 0
+    graph_writes = 0
     for event in events:
         alert = alert_from_event(event, score_event(event))
         started_at = time.perf_counter()
@@ -183,6 +213,13 @@ def triage_rss(args: argparse.Namespace) -> int:
                 ticker=event.tickers[0] if event.tickers else None,
                 started_at=started_at,
             )
+        if memory_writer:
+            feedback = memory_writer.write_event_triage(event, alert, run)
+            if feedback.episode_key:
+                memory_episodes += 1
+            memory_mistakes += feedback.mistakes_written
+        if graph_writer and graph_writer.write_event_decision(event, alert, run):
+            graph_writes += 1
         ticker = ",".join(event.tickers) if event.tickers else "-"
         print(
             f"{ticker:<12} | {alert.alert_level:<12} | APEX={run.apex.decision:<7} | "
@@ -193,6 +230,11 @@ def triage_rss(args: argparse.Namespace) -> int:
     if db:
         db.disconnect()
         print(f"Persisted {persisted_pairs} event/alert pairs and {persisted_outputs} agent outputs")
+    if memory_writer:
+        print(f"Wrote {memory_episodes} memory episodes and {memory_mistakes} mistake records")
+    if graph_writer:
+        graph_writer.close()
+        print(f"Wrote {graph_writes} graph event/decision records")
     return 0
 
 
