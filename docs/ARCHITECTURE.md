@@ -1,1269 +1,571 @@
 # HIVEMIND Market Intelligence Architecture
 
-Status: Theory and system design draft  
-Audience: Founder, product, quant, backend, AI engineering  
-Mode: Free-first, swing-trading intelligence, small/mid-cap focused  
+Status: canonical architecture theory  
+Audience: founder, investors, backend, AI, quant, data engineering  
+Scope: Indian capital-markets intelligence across shares/equities, debt, commodities, FX, rates, derivatives for hedging, macro policy, flows, and price action
 
-## 1. Core Problem
+## 1. Product Thesis
 
-The goal is not to build another stock screener.
+HIVEMIND is an AI-swarm capital-markets intelligence terminal.
 
-The goal is to build a system that notices when a listed company is becoming important before the opportunity is obvious to everyone.
+The product does not ask:
 
-Examples:
-
-- Dynacons-style move: company-specific order win, large relative to company size
-- MTAR-style move: sector/theme strength plus company-specific positioning
-- unexplained price run: price and volume move first, reason appears later
-- policy-driven move: government allocation or regulation creates a sector tailwind
-- tender-driven move: procurement activity points toward future order winners
-
-These moves are missed when the system only looks at one data type.
-
-A price-only screener misses the reason.
-
-A news-only screener misses accumulation before the news.
-
-An AI-only system hallucinates or reacts late.
-
-A generic ranker treats all signals equally and loses the context that makes small/mid-cap moves powerful.
-
-HIVEMIND should work differently.
-
-It should build a living evidence graph around every company and theme, then identify when evidence, timing, materiality, and market behavior start reinforcing each other.
-
-## 2. Design Principle
-
-HIVEMIND is an evidence-first intelligence system.
-
-It does not ask:
-
-> Which stock has the highest score?
+```text
+Which security has the highest generic score?
+```
 
 It asks:
 
-> What changed, who benefits, how material is it, is the market confirming it, and what evidence supports that view?
-
-This distinction matters.
-
-A generic signal system produces alerts like:
-
 ```text
-Stock up 8 percent on high volume.
+What changed across capital markets, who benefits or loses, how material is it,
+what can hedge or amplify the risk, and what evidence supports or weakens the view?
 ```
 
-HIVEMIND should produce something closer to:
+This distinction matters. A normal screener sees a price jump. A news scraper sees a headline. A generic LLM sees a story. HIVEMIND should see a market situation forming across evidence, time, relationships, and market behavior.
 
-```text
-Company received a large government-linked digital infrastructure order.
-Order size appears material relative to company scale.
-The stock is small/mid-cap, so incremental order flow may affect perception faster.
-Volume expanded after the disclosure.
-The event also matches a broader digital infrastructure tailwind.
-Evidence confidence is high because the source is an exchange filing.
-```
+### End Product: HIVEMIND Terminal
 
-The second alert is not just a signal. It is a thesis seed.
+The investor-facing product should be a professional capital-markets terminal for Indian market intelligence, not a passive dashboard and not a chatbot.
 
-## 3. Why Generic Signals Fail
+Core terminal surfaces:
 
-Generic signals fail because they flatten very different situations into the same score.
-
-Example:
-
-| Situation | Generic Signal View | HIVEMIND View |
-|---|---|---|
-| Large-cap stock rises 3 percent on result day | positive price action | maybe normal noise |
-| Small-cap wins order equal to large share of annual revenue | positive news | potentially thesis-changing |
-| Stock breaks out before news | technical breakout | unexplained accumulation requiring investigation |
-| Budget boosts railway capex | macro news | sector graph update affecting vendors |
-| Tender award appears before company filing | public procurement item | early order pipeline clue |
-
-The same price move can mean different things depending on company size, sector, liquidity, source quality, market regime, and whether the event changes future expectations.
-
-So HIVEMIND should not rely on generic signal names.
-
-It should model **situations**.
-
-## 4. The Situation Model
-
-A situation is a structured interpretation of what may be happening around a company.
-
-Every situation has:
-
-- trigger
-- evidence
-- company context
-- market behavior
-- sector/theme context
-- materiality
-- uncertainty
-- time horizon
-
-Example:
-
-```json
-{
-  "situation_type": "material_order_win_small_mid_cap",
-  "company": "Dynacons Systems and Solutions",
-  "trigger": "exchange_announcement",
-  "event": "order_win",
-  "amount_inr_cr": 750,
-  "materiality_basis": ["order_size_vs_market_cap", "order_size_vs_revenue"],
-  "market_behavior": ["volume_expansion", "price_breakout"],
-  "tailwinds": ["government_it_spend", "digital_infrastructure"],
-  "evidence_quality": "official",
-  "uncertainty": ["execution_margin_unknown", "project_duration_unknown"],
-  "time_horizon": "days_to_months"
-}
-```
-
-This is not a stock score. It is a machine-readable thesis object.
-
-## 5. The Six Intelligence Lanes
-
-HIVEMIND should process the market through six separate intelligence lanes.
-
-Each lane answers a different question.
-
-### Lane 1: Official Corporate Events
-
-Question:
-
-> Did the company disclose something that can change expectations?
-
-Sources:
-
-- BSE announcements
-- NSE announcements
-- company investor relations pages
-- rating agency releases
-- exchange corporate actions
-
-Events:
-
-- order win
-- contract extension
-- tender win
-- result growth
-- margin expansion
-- debt reduction
-- rating upgrade
-- capex
-- fundraise
-- promoter action
-- regulatory approval
-- litigation/risk disclosure
-
-Why this lane matters:
-
-Official disclosures are the strongest evidence source. For small and mid caps, a single announcement can change the market's view of the company.
-
-Non-generic logic:
-
-An order win is not automatically bullish.
-
-The system must ask:
-
-- Is the value disclosed?
-- Is the value large relative to market cap?
-- Is the value large relative to trailing revenue?
-- Is the customer credible?
-- Is the order repeatable or one-off?
-- Is it high-margin or low-margin work?
-- Is there execution risk?
-- Did volume confirm after disclosure?
-
-### Lane 2: Price, Volume, Delivery, and Liquidity Behavior
-
-Question:
-
-> Is the market behaving as if something has changed?
-
-Sources:
-
-- NSE/BSE bhavcopy
-- delivery data
-- EOD OHLCV
-- corporate action adjusted history
-
-Signals:
-
-- volume expansion
-- delivery spike
-- breakout
-- relative strength
-- multi-day accumulation
-- low-float sharp move
-- sector-relative move
-- unexplained gap
-
-Why this lane matters:
-
-Some moves start before the clean reason is visible. Small and mid caps often show accumulation before broad public attention.
-
-Non-generic logic:
-
-A price spike is not the alert.
-
-A price spike is a question:
-
-> What explains this?
-
-For every unusual move, the system should launch an investigation:
-
-- check exchange filings
-- check recent tenders
-- check sector news
-- check company news
-- check peer moves
-- check macro/policy events
-- check whether the move is isolated or sector-wide
-
-If no reason is found, the situation becomes:
-
-```text
-unexplained_price_action_under_investigation
-```
-
-This is still useful because unexplained strength can precede a catalyst.
-
-### Lane 3: Macro and Policy Tailwinds
-
-Question:
-
-> Did a policy, regulation, budget, or macro change improve the future environment for a sector?
-
-Sources:
-
-- RBI
-- SEBI
-- MoSPI/eSankhyiki
-- PIB
-- union budget documents
-- ministry releases
-- cabinet approvals
-- sector regulator releases
-
-Tailwinds:
-
-- defence procurement
-- railway capex
-- digital infrastructure
-- data centers
-- PLI schemes
-- renewable energy
-- power transmission
-- semiconductor/electronics
-- import duty changes
-- export incentives
-- interest rate changes
-- liquidity changes
-
-Why this lane matters:
-
-Some stocks move because the market starts repricing the future of a whole sector.
-
-Non-generic logic:
-
-Policy news is not directly a stock signal.
-
-It must pass through a beneficiary graph:
-
-```text
-policy event
--> sector
--> sub-sector
--> business activity
--> listed companies
--> revenue exposure
--> order history
--> price confirmation
-```
-
-Example:
-
-```text
-railway capex increase
--> railway infrastructure
--> signalling, cables, EPC, rolling stock, electronics
--> listed vendors and suppliers
--> companies with railway order history
--> watch for filings, tender wins, price-volume strength
-```
-
-### Lane 4: Tender and Procurement Pipeline
-
-Question:
-
-> Are future orders forming before they appear in company announcements?
-
-Sources:
-
-- CPPP/eProcure
-- GeM
-- IREPS
-- PSU procurement portals
-- defence procurement
-- state tenders
-- power utility tenders
-- infrastructure tender portals
-
-Events:
-
-- new tender
-- tender amendment
-- bid deadline
-- L1 result
-- award notice
-- repeat bidder activity
-- procurement plan
-
-Why this lane matters:
-
-Tenders can show demand before the listed company announces a win.
-
-Non-generic logic:
-
-A tender is not automatically relevant to a stock.
-
-The system should ask:
-
-- Which sector does this tender belong to?
-- Which listed companies can technically qualify?
-- Have they won similar tenders before?
-- Is the tender size meaningful?
-- Is the buyer a credible government/PSU/large enterprise?
-- Is this a one-off tender or part of a bigger spending wave?
-
-This lane creates early watchlists rather than final buy signals.
-
-### Lane 5: News and Search Discovery
-
-Question:
-
-> Is there relevant public context that official sources did not make easy to find?
-
-Sources:
-
-- search engines
-- business news
-- sector media
-- company press releases
-- local news
-- government release mirrors
-- trade publications
-
-Search engines are not the truth layer.
-
-They are useful for:
-
-- investigating unexplained price action
-- discovering missed company news
-- finding tender/result/order context
-- checking sector narratives
-- finding local or trade-publication coverage
-- daily missed-event audit
-
-Non-generic logic:
-
-Search should be task-driven, not broad scraping.
-
-Bad approach:
-
-```text
-Search the web for all stock news.
-```
-
-Good approach:
-
-```text
-Stock moved unusually.
-Generate targeted queries from company, aliases, sector, recent filings, and keywords.
-Collect candidate pages.
-Classify source quality.
-Verify against official filings where possible.
-Store all evidence.
-```
-
-Example query families:
-
-```text
-"Dynacons Systems" order
-"Dynacons Systems" contract
-"Dynacons Systems" tender
-"Dynacons Systems" government project
-"Dynacons Systems" BSE announcement
-"Dynacons Systems" investor presentation
-```
-
-For MTAR-style investigation:
-
-```text
-"MTAR" defence order
-"MTAR" space
-"MTAR" nuclear
-"MTAR" clean energy
-"MTAR" order book
-"MTAR" ISRO
-```
-
-The search lane should be activated by context:
-
-- price anomaly
-- company on watchlist
-- policy tailwind
-- tender category match
-- missing evidence
-- end-of-day audit
-
-### Lane 6: Fundamentals and Business Quality
-
-Question:
-
-> Is this company capable of turning the event/tailwind into real value?
-
-Sources:
-
-- results
-- annual reports
-- investor presentations
-- shareholding patterns
-- rating reports
-- balance sheet data
-- order book disclosures
-
-Features:
-
-- revenue growth
-- margin trend
-- debt trend
-- promoter holding
-- pledge risk
-- working capital pressure
-- order book quality
-- customer concentration
-- valuation regime
-
-Why this lane matters:
-
-A strong event in a weak company can still produce a trade, but conviction should be different from a strong event in an improving company.
-
-Non-generic logic:
-
-HIVEMIND should separate:
-
-- trade catalyst
-- business quality
-- execution risk
-- valuation risk
-
-This prevents the system from confusing "stock can move" with "company is fundamentally strong".
-
-## 6. Evidence Graph
-
-The central data structure should be an evidence graph.
-
-Not just tables. Not just embeddings. Not just a search index.
-
-The graph connects:
-
-```text
-company
--> exchange listings
--> aliases
--> sectors
--> products
--> customers
--> tenders
--> announcements
--> policy tailwinds
--> peers
--> price behavior
--> historical situations
-```
-
-Example:
-
-```text
-Dynacons Systems
--> IT infrastructure
--> digital transformation
--> government IT spend
--> order wins
--> BSE/NSE filings
--> price-volume response
--> similar past events
-```
-
-Example:
-
-```text
-MTAR
--> precision engineering
--> space
--> defence
--> nuclear
--> clean energy
--> strategic manufacturing
--> policy/tender/order-book sensitivity
-```
-
-This graph is what makes the system non-generic.
-
-The system does not just see "news". It sees:
-
-```text
-news connected to a sector
-sector connected to policy
-policy connected to tenders
-tenders connected to companies
-companies connected to price behavior
-```
-
-## 7. Situation Engines
-
-Instead of one ranking model, HIVEMIND should have multiple situation engines.
-
-Each engine detects a different pattern.
-
-### Engine A: Material Order-Win Engine
-
-Detects:
-
-- official order win
-- contract value disclosed
-- company is small/mid cap
-- value is large versus company size
-- credible customer
-- volume/price confirmation
-
-Output:
-
-```text
-material_order_win_small_mid_cap
-```
-
-### Engine B: Sector Tailwind Engine
-
-Detects:
-
-- macro/policy/tender wave
-- specific sector or sub-sector impact
-- listed beneficiaries
-- historical exposure
-- early price action among beneficiaries
-
-Output:
-
-```text
-sector_tailwind_candidate
-```
-
-### Engine C: Unexplained Price Action Engine
-
-Detects:
-
-- abnormal price/volume/delivery move
-- no immediate official explanation
-- search/news/tender investigation triggered
-
-Output:
-
-```text
-unexplained_price_action_under_investigation
-```
-
-### Engine D: Tender Pipeline Engine
-
-Detects:
-
-- tender or procurement event
-- possible listed beneficiaries
-- high-value opportunity
-- repeat category or buyer
-
-Output:
-
-```text
-tender_pipeline_watchlist
-```
-
-### Engine E: Result Re-Rating Engine
-
-Detects:
-
-- revenue growth
-- margin expansion
-- guidance/order book improvement
-- price breakout
-- sector confirmation
-
-Output:
-
-```text
-earnings_rerating_candidate
-```
-
-### Engine F: Theme Rotation Engine
-
-Detects:
-
-- multiple stocks in same theme moving
-- news/policy/tender catalyst
-- leader/laggard behavior
-- small/mid-cap participation
-
-Output:
-
-```text
-theme_rotation_detected
-```
-
-## 8. Alert Philosophy
-
-HIVEMIND alerts should not say:
-
-```text
-Buy stock X.
-```
-
-They should say:
-
-```text
-Investigate stock X because situation Y is forming.
-Evidence strength is high/medium/low.
-Materiality appears high/medium/low.
-Market confirmation is present/absent.
-Main uncertainty is Z.
-```
-
-Alert structure:
-
-```json
-{
-  "company": "Example Ltd",
-  "situation_type": "material_order_win_small_mid_cap",
-  "time_horizon": "days_to_months",
-  "evidence_strength": "high",
-  "materiality": "high",
-  "market_confirmation": "partial",
-  "tailwind_alignment": "strong",
-  "why_now": "...",
-  "why_it_matters": "...",
-  "what_can_go_wrong": "...",
-  "evidence": ["exchange filing", "price-volume data", "policy release"]
-}
-```
-
-This keeps the system useful for swing trading while avoiding false certainty.
-
-## 9. Scoring Without Becoming Generic
-
-The system can still use scores, but scores should be situation-specific.
-
-Do not create one universal "stock score" first.
-
-Instead:
-
-```text
-order_win_score
-tailwind_score
-price_action_score
-tender_pipeline_score
-result_rerating_score
-theme_rotation_score
-```
-
-Then create a final attention priority:
-
-```text
-attention_priority = max/smart_fusion(situation_scores)
-```
-
-Why this matters:
-
-A stock can be uninteresting fundamentally but still have a powerful order-win situation.
-
-Another stock can have no corporate news but be important because the entire sector is rotating.
-
-Another can be a search candidate only because price action is unusual.
-
-These should not be forced into one flat model too early.
-
-## 10. Processing Strategy for Massive Data
-
-The system should not process every source with the same intensity.
-
-Use a tiered processing model.
-
-### Tier 0: Universe Refresh
-
-Frequency:
-
-- daily or weekly
-
-Purpose:
-
-- maintain listed company universe
-- update aliases
-- map NSE/BSE/ISIN
-- update sector and market-cap bucket
-
-### Tier 1: High-Trust Event Polling
-
-Frequency:
-
-- every few minutes to hourly during market days
-- EOD catch-up
-
-Sources:
-
-- BSE announcements
-- NSE announcements
-- SEBI RSS
-- important ministry/PIB feeds
-
-Processing:
-
-- fetch
-- dedupe
-- store raw evidence
-- parse event
-- map company
-- create situation candidate
-
-### Tier 2: Price/Volume Scan
-
-Frequency:
-
-- EOD for first version
-- later intraday snapshots if free sources support it
-
-Processing:
-
-- detect abnormal moves
-- trigger investigation only for unusual stocks
-- avoid searching the whole market blindly
-
-### Tier 3: Tailwind and Tender Watch
-
-Frequency:
-
-- daily
-- higher frequency for tracked ministries/sectors
-
-Processing:
-
-- detect policy/tender events
-- map to sectors
-- update theme graph
-- watch beneficiary companies
-
-### Tier 4: Search and News Investigation
-
-Frequency:
-
-- triggered, not constant
-
-Triggers:
-
-- unexplained price action
-- major policy event
-- tender category match
-- company enters watchlist
-- duplicate/missing evidence
-- EOD missed-move audit
-
-This makes search smart and cheap.
-
-## 11. Smart Search Engine Use
-
-Search should be an investigation tool.
-
-Search workflow:
-
-1. Generate query set from company aliases, sector, event suspicion, and date range.
-2. Fetch top results from multiple search sources where possible.
-3. Store result page metadata.
-4. Classify source quality.
-5. Extract candidate evidence.
-6. Verify against official source if possible.
-7. Attach findings to a situation.
-
-Source quality levels:
-
-| Level | Source | Use |
-|---|---|---|
-| A | exchange/regulator/government/company | truth source |
-| B | reputed financial media/rating agency | strong context |
-| C | sector/trade/local media | discovery |
-| D | social/forums/SEO aggregators | weak clue only |
-
-Search should produce:
-
-```text
-candidate_evidence
-```
-
-not:
-
-```text
-final_truth
-```
-
-## 12. AI Role
-
-AI is the analyst assistant inside the pipeline.
-
-AI should:
-
-- read messy PDFs
-- classify events
-- extract order value/customer/timeline
-- map policy to sectors
-- map tender descriptions to possible listed companies
-- cluster duplicate articles
-- explain situations
-- generate investigation queries
-- identify missing information
-
-AI should not:
-
-- invent data
-- replace price feeds
-- replace exchange filings
-- create unsupported claims
-- make final decisions without evidence
-
-AI outputs must include:
-
-- source evidence id
-- extracted fields
-- confidence
-- uncertainty
-- evidence quote or reference
-- reason for classification
-
-## 13. AI Swarm Fusion Layer
-
-The AI swarm should be fused into HIVEMIND after evidence capture, event parsing, and situation generation.
-
-The swarm is not the data source.
-
-The swarm is the reasoning committee.
-
-```text
-raw sources
--> raw evidence store
--> structured events
--> company/sector/tailwind graph
--> situation engines
--> AI swarm
--> final situation brief
-```
-
-This separation is important because the system needs two different kinds of intelligence:
-
-- data intelligence: what happened, where it came from, and whether it is trustworthy
-- reasoning intelligence: what it may mean, why it matters, what can go wrong, and what to investigate next
-
-The AI swarm belongs to the second layer.
-
-### Swarm Activation
-
-The swarm should not run on every company every day.
-
-It should activate only when a situation deserves deeper reasoning:
-
-- official high-materiality event
-- abnormal price/volume move
-- unexplained price action
-- new macro/policy/tender tailwind
-- tender linked to listed beneficiaries
-- small/mid-cap with sudden attention
-- conflicting evidence
-- end-of-day review of top candidates
-
-This keeps cost and noise under control.
-
-### Swarm Agents
-
-The first version should use these agents:
-
-| Agent | Role | Output |
-|---|---|---|
-| Event Extraction Agent | Extracts event type, value, customer, timeline, source confidence | structured event patch |
-| Company Context Agent | Checks company size, business model, order history, customer exposure | materiality view |
-| Sector Tailwind Agent | Maps macro/policy/tender events to sectors and beneficiaries | tailwind view |
-| Price/Volume Agent | Interprets market confirmation and accumulation behavior | market behavior view |
-| Search Investigator Agent | Investigates missing context and unexplained moves | candidate evidence |
-| Bull Case Agent | Builds the positive thesis from evidence | bull thesis |
-| Bear/Critic Agent | Challenges the thesis and identifies risk | risk thesis |
-| Fusion Judge | Combines agent outputs into one situation brief | final brief |
-
-### Swarm Fusion Output
-
-The swarm should produce a final situation brief, not a buy/sell call.
-
-```json
-{
-  "company": "Example Ltd",
-  "situation_type": "material_order_win_small_mid_cap",
-  "conviction": "medium_high",
-  "evidence_strength": "high",
-  "market_confirmation": "present",
-  "tailwind_alignment": "strong",
-  "why_it_matters": "...",
-  "what_can_go_wrong": "...",
-  "missing_information": ["project duration", "margin profile"],
-  "next_actions": ["track follow-through volume", "check management commentary"],
-  "sources": ["exchange filing", "price-volume data"]
-}
-```
-
-The Fusion Judge must preserve disagreement.
-
-If the Bull Case Agent is positive but the Bear/Critic Agent finds execution risk or valuation risk, the final brief should show that tension clearly.
-
-## 14. Model-Agnostic AI Layer
-
-The AI layer must be model agnostic from day one.
-
-For now, HIVEMIND may only have a few API keys available. Later, the project may use Gemini, GPT, local models, open-source hosted models, or multiple providers at once.
-
-Therefore, no agent should depend directly on a specific provider SDK.
-
-Every agent should depend on a common model interface.
-
-### Provider Abstraction
-
-```python
-class AIModelProvider:
-    name: str
-
-    def generate(self, request: AIRequest) -> AIResponse:
-        ...
-
-    def embed(self, request: EmbeddingRequest) -> EmbeddingResponse:
-        ...
-```
-
-The provider can be:
-
-- Gemini
-- OpenAI GPT
-- Anthropic
-- local model
-- open-source hosted model
-- mock model for testing
-
-Agents should not know which provider is being used.
-
-### Agent Interface
-
-```python
-class Agent:
-    name: str
-    role: str
-
-    def run(self, context: AgentContext, model: AIModelProvider) -> AgentResult:
-        ...
-```
-
-The agent receives:
-
-- situation candidate
-- evidence bundle
-- company context
-- sector/tailwind context
-- price/volume context
-- task instructions
-
-The agent returns:
-
-- structured findings
-- confidence
-- citations/evidence ids
-- uncertainty
-- recommended next action
-
-### Model Routing
-
-HIVEMIND should support model routing later.
-
-Example:
-
-| Task | Preferred Model Type |
+| Terminal Surface | What It Does |
 |---|---|
-| cheap classification | small fast model |
-| PDF summarization | long-context model |
-| extraction with schema | reliable structured-output model |
-| final reasoning brief | strongest available reasoning model |
-| embeddings | embedding-specific model |
-| tests/local dev | mock provider |
+| Universal search | jump to issuer, security, sector, commodity, currency, rate, derivative, policy, tender, flow event, or situation family |
+| Situation monitor | ranked queue of forming market situations with freshness, materiality, evidence grade, market confirmation, valuation state, and uncertainty |
+| Security page | issuer profile, filings, catalysts, price/delivery, valuation, peers, credit/rate context, risks, and historical event trail |
+| Cross-asset pages | crude, metals, FX, rates, debt/credit, derivatives, index flows, policy, procurement, and macro shock dashboards |
+| Evidence explorer | raw source, timestamp, parsed fields, linked entities, and source reliability |
+| Agent analysis panel | which agents investigated, what they concluded, where they are uncertain, and what is still missing |
+| Research queue | unresolved questions, search tasks, watch triggers, and post-mortems |
 
-For now, we can keep this simple:
-
-```text
-agent -> configured default provider
-```
-
-Later:
+The product positioning:
 
 ```text
-agent + task + cost budget + latency need -> provider router -> model
+professional capital-markets workflow + agentic investigation + cross-asset evidence graph
 ```
 
-### Prompt Portability
+Bloomberg is the reference point for integrated market workflow. HIVEMIND's entry point is agentic intelligence over fragmented Indian capital-market evidence: issuers, shares, debt, commodities, FX, rates, derivatives, policy/tender links, historical replay, and explainable situation briefs.
 
-Prompts should be written as provider-neutral task specs.
+## 2. Why This Is A Capital-Markets Terminal
 
-Avoid provider-specific assumptions like:
+Indian capital markets move for reasons that are fragmented across sources and asset classes:
 
-- only one vendor's JSON mode
-- tool-calling format locked to one API
-- model-specific system prompt behavior
-- provider-specific safety or citation features
+- a corporate filing appears on BSE/NSE
+- a tender award appears before company media coverage
+- a ministry release changes sector demand
+- crude, metals, rates, or USD/INR changes input economics and credit risk
+- G-sec yields, ratings, or liquidity alter valuation and funding conditions
+- derivatives show hedge availability, basis, optionality, and risk transfer
+- MSCI or index rebalancing creates mechanical demand
+- price and delivery data show accumulation before the reason is obvious
+- valuation changes whether the same catalyst is cheap, fair, or already euphoric
 
-Use a common internal format:
+No single data feed captures this. No single AI agent can reason over it reliably. No generic ranking model should flatten it.
+
+HIVEMIND therefore uses:
+
+```text
+evidence lake + event graph + situation engines + quant validation + AI swarms
+```
+
+## 3. Cross-Asset Market Mesh
+
+The system treats markets as a causal mesh, not as isolated tickers.
+
+```mermaid
+flowchart LR
+    policy["Policy / budgets / regulators"] --> sectors["Sectors and themes"]
+    tenders["Tenders / procurement"] --> companies["Listed companies"]
+    macro["Rates / FX / inflation"] --> sectors
+    crude["Crude / gas / freight"] --> sectors
+    metals["Copper / steel / aluminium / zinc"] --> sectors
+    bonds["G-sec yields / credit spreads"] --> valuation["Valuation regime"]
+    derivatives["Futures / options / hedge instruments"] --> valuation
+    derivatives --> price
+    global["Global risk / geopolitical escalation / sanctions"] --> macro
+    sectors --> companies
+    companies --> price["Price / volume / delivery"]
+    flows["MSCI / FTSE / Nifty / F&O / blocks"] --> price
+    price --> situations["Situation candidates"]
+    valuation --> situations
+    companies --> situations
+```
+
+Examples:
+
+| External Change | Transmission Question |
+|---|---|
+| crude shock | Which companies benefit from upstream pricing, and which lose through input costs? |
+| INR weakness | Which exporters benefit, which import-heavy firms or foreign-debt borrowers suffer? |
+| metal price rise | Which producers benefit, and which capital goods or manufacturing companies face margin risk? |
+| bond-yield change | Which banks, NBFCs, real estate, utilities, and high-duration growth stocks reprice? |
+| MSCI rebalance | Is passive flow large relative to average daily value and free float? |
+| policy/tender wave | Which listed suppliers have actual capability and past exposure? |
+
+The system should never say "crude up, buy energy." It should map exposure, materiality, liquidity, valuation, and confirmation.
+
+## 4. Swarm-First Architecture
+
+AI swarms are not a late layer. They operate across the pipeline.
+
+| Pipeline Area | Swarm Role |
+|---|---|
+| Data ingestion | monitor sources, parse filings, resolve entities, detect schema drift, audit missing records |
+| Search/research | generate targeted queries, classify source quality, triangulate evidence, verify against official sources |
+| Graph construction | extract entities/relationships, merge aliases, build company-sector-policy-tender links |
+| Situation detection | explain why an event belongs to a situation family and identify missing facts |
+| Quant validation | run event studies, abnormal-return checks, regime filters, peer-relative comparisons |
+| Risk and valuation | challenge the thesis, detect crowded/euphoric setups, flag balance sheet/governance risks |
+| Final synthesis | preserve opportunity/risk uncertainty and produce an evidence-cited situation brief |
+
+The first production target is 10-15 agents/workers. The investor-scale target is 30-40 specialists selected by a router.
+
+Why swarms are central:
+
+- Markets are multi-causal. One model cannot reliably parse filings, map sector exposure, test price action, inspect valuation, and challenge risk in one pass.
+- Specialist agents let each role have its own tools, schemas, prompts, budgets, and quality gates.
+- Parallel agents can investigate multiple hypotheses while the router controls cost.
+- Risk-review and debate agents reduce unsupported narratives by forcing evidence, counter-evidence, and missing-fact disclosure.
+- Outcome memory turns every alert into training data for future routing, thresholds, and agent behavior.
+
+The user sees one terminal. Behind it, routed agents operate like an analyst workflow: source monitors, parsers, sector analysts, quant validators, macro specialists, risk reviewers, and a synthesis agent.
+
+### Swarm Runtime Architecture
+
+The swarm is not implemented as "run many prompts and summarize." It is a governed runtime.
+
+```text
+trigger
+-> orchestrator/router
+-> task graph
+-> selected agent workspaces
+-> tool gateway + memory broker
+-> evidence contracts
+-> critique/debate loop
+-> synthesis
+-> terminal surface
+-> outcome replay
+```
+
+Core runtime services:
+
+| Service | Role |
+|---|---|
+| Event bus | receives filings, price moves, rate/FX/commodity shocks, policy releases, index events, user queries, and data gaps |
+| Orchestrator/router | decomposes a situation into a task DAG, then assigns agents, model tier, budget, priority, deadline, and stop rules |
+| Agent registry | stores each agent's mandate, productive bias, known blind spots, source priority, allowed tools, output schema, and quality gate |
+| Tool gateway | controls access to market data, filings, search, graph, feature store, backtest runner, and source adapters |
+| Memory broker | assembles small context packs from BM25, vector retrieval, graph neighborhoods, cached profiles, and prior outcomes |
+| Evidence contract validator | rejects outputs without evidence IDs, timestamps, extracted fields, confidence, uncertainty, and source lineage |
+| Critique loop | runs risk review, quant validation, missing-evidence search, disagreement checks, and invalidation triggers |
+| Replay logger | stores prompts, model versions, retrieved context, outputs, decisions, and later outcomes for backtesting |
+
+This is the game-changing architecture: 30-40 agents do not all run on every event. The router selects the smallest useful specialist set. The system becomes smarter because outcomes score not just the final thesis, but also which agents, prompts, retrieval packs, thresholds, and evidence types helped or failed.
+
+### Example Runtime: Cross-Asset Shock
+
+For a crude + INR + rates shock:
+
+1. Market data workers detect crude, USD/INR, G-sec yields, and sector breadth moving together.
+2. The router activates macro, commodity, credit, equity exposure, derivatives/hedge, valuation, market behavior, and risk agents.
+3. The memory broker sends each agent only relevant exposures, filings, peer history, hedge history, similar event windows, and source IDs.
+4. Agents disagree productively: one maps beneficiaries, one maps margin losers, one checks funding risk, one checks hedge availability, one checks price/liquidity confirmation, one checks valuation stretch.
+5. The synthesis agent publishes a terminal situation page with evidence, confidence, uncertainty, risk lens, hedge context, and monitoring triggers.
+6. The backtest loop scores the alert later: early, late, false positive, useful watch, missed catalyst, and which agents were useful or noisy.
+
+### Research Job Runtime
+
+HIVEMIND must also support explicit deep-research jobs. A user prompt such as "scan broker reports and Q4 earnings for small/mid-cap stocks with high upside and strict financial guardrails" should not run as one large prompt. It should compile into a governed research workflow.
+
+The prompt becomes a `research_job` object:
 
 ```json
 {
-  "task": "classify_market_event",
-  "instructions": "...",
-  "evidence": [...],
-  "required_schema": {...},
-  "output_contract": "strict_json"
+  "objective": "find top mispriced small/mid-cap equities by broker target upside",
+  "universe": {
+    "market": "India",
+    "market_cap_inr_cr": [1000, 25000],
+    "asset_scope": ["equity"],
+    "include": ["NSE", "BSE"],
+    "exclude": ["inactive securities"]
+  },
+  "time_window": {
+    "from": "2026-04-01",
+    "to": "2026-05-31"
+  },
+  "source_scope": [
+    "institutional brokerage reports",
+    "target-price revisions",
+    "audited earnings releases",
+    "exchange filings",
+    "shareholding and pledge disclosures"
+  ],
+  "hard_filters": {
+    "roce_gt": 0.18,
+    "cfo_to_ebitda_gt": 0.70,
+    "net_debt_to_equity_lt": 0.30,
+    "promoter_pledge_eq": 0,
+    "pat_or_forward_eps_growth_gt": 0.30
+  },
+  "ranking_formula": "(target_price - cmp) / cmp",
+  "output_schema": "ranked_candidates_with_evidence_and_rejections"
 }
 ```
 
-Then provider adapters translate this request into Gemini/OpenAI/local-model calls.
-
-### Evidence Contract
-
-Every AI agent must receive evidence ids, not just plain text.
-
-Every AI result must cite the evidence ids it used.
-
-```json
-{
-  "finding": "The announcement appears to be a material order win.",
-  "confidence": 0.86,
-  "evidence_ids": [101, 102],
-  "uncertainty": ["margin profile not disclosed"]
-}
-```
-
-This keeps AI useful without allowing unsupported claims.
-
-### Model-Agnostic Storage
-
-AI outputs should store:
-
-- provider name
-- model name
-- prompt version
-- input evidence ids
-- output JSON
-- confidence
-- created_at
-
-This allows the same situation to be re-run later with a better model.
-
-The system should support:
+Research jobs execute in stages:
 
 ```text
-reprocess situation with stronger model
-compare model outputs
-audit old AI reasoning
-upgrade prompts without changing raw evidence
+prompt/job spec
+-> scope compiler
+-> universe builder
+-> source discovery
+-> evidence intake
+-> extraction and normalization
+-> candidate generation
+-> hard guardrail filters
+-> valuation disconnect math
+-> catalyst and earnings analysis
+-> debate and risk review
+-> final ranking
+-> memory writeback
+-> outcome tracking
 ```
 
-### First Implementation Rule
+This pattern is useful beyond equity screens. The same runtime can handle credit-risk scans, commodity transmission research, policy/tender beneficiary mapping, MSCI/index-flow checks, macro shock studies, valuation re-rating reviews, and unexplained price-action investigations.
 
-Do not build Gemini-specific or GPT-specific agents.
+Agent roles for a forensic equity research job:
 
-Build:
+| Agent | Role |
+|---|---|
+| Scope Compiler | converts the user prompt into universe, dates, source rules, filters, formulas, and output schema |
+| Universe Builder | builds the tradable universe and validates market-cap, liquidity, listing status, and instrument IDs |
+| Source Discovery Agent | finds broker reports, earnings releases, exchange filings, concall transcripts, shareholding data, and target revisions |
+| Evidence Intake Agent | stores every report, filing, table, web page, PDF, and metadata as raw evidence before analysis |
+| Broker Target Extractor | extracts brokerage name, analyst, date, rating, target price, current price used, EPS estimates, and thesis |
+| Earnings Extractor | extracts Q4 audited numbers, PAT growth, EBITDA, CFO, debt, cash, margins, and management commentary |
+| Fundamental Guardrail Agent | applies ROCE, CFO/EBITDA, net debt/equity, pledge, and growth constraints with evidence IDs |
+| Valuation Math Agent | calculates upside, trailing P/E, forward P/E, EPS growth, and valuation spread |
+| Catalyst Agent | identifies the operational trigger: margin expansion, operating leverage, order book, asset monetization, turnaround, or structural demand |
+| Risk Review Agent | rejects value traps, stale targets, weak cash conversion, governance concerns, liquidity traps, and unsupported estimates |
+| Debate Moderator | forces opportunity and risk agents to resolve disagreements or mark uncertainty |
+| Synthesis Agent | publishes the ranked report with accepted candidates, rejected candidates, evidence, calculations, and unresolved gaps |
+| Memory Writer | stores the job, sources, prompts, agent outputs, rejections, accepted candidates, and later outcomes |
+
+Hard rule: if a source cannot be verified, the system must mark `EVIDENCE_GAP` instead of filling the blank with AI inference. AI can find, parse, compare, debate, and summarize evidence; it is not the source of truth.
+
+### Knowledge Intake And Learning Loop
+
+User prompts, analyst notes, research reports, post-mortems, and manual observations should be ingested as knowledge artifacts. They are not automatically treated as facts. They become:
+
+- reusable research-job templates
+- agent instructions and failure checklists
+- candidate source lists
+- known situation patterns
+- post-mortem lessons
+- evaluation datasets for future agent runs
+
+The memory writer stores:
+
+- original prompt or artifact
+- extracted methodology
+- source provenance
+- agent outputs and disagreements
+- final accepted/rejected candidates
+- confidence and evidence gaps
+- later market outcome
+
+This lets the system improve without manually rewriting every pipeline. The architecture learns which research patterns worked, which filters prevented traps, which sources were reliable, and which agents missed important evidence.
+
+### Knowledge Storage Boundaries
+
+HIVEMIND should not dump everything into one vector store and call it memory. Knowledge is stored by purpose.
+
+| Store | What Goes There | What Must Not Go There | Why |
+|---|---|---|---|
+| Raw evidence lake | exact filings, broker PDFs, API payloads, search snapshots, RSS items, pages, CSVs, tables, transcripts | derived conclusions as if they were facts | legal/audit replay and source truth |
+| Parsed records | extracted fields, tables, spans, values, timestamps, entity links, parser confidence | free-form model opinions without schema | deterministic joins, filters, and calculations |
+| Feature store | prices, delivery, valuation, liquidity, yields, FX, commodities, macro, flow, event-window features | raw documents | fast scoring, backtests, and terminal queries |
+| Vector store | embeddings for reports, filings, situations, theses, notes, transcript chunks, similar-event retrieval | untraceable facts without evidence IDs | semantic recall and similar-case search |
+| Graph store | company-sector-policy-customer-tender-commodity-rate-credit-derivative-event relationships | long raw documents | multi-hop reasoning and beneficiary mapping |
+| Agent run store | prompts, model, context pack, tool calls, outputs, confidence, errors, costs | unverifiable source data | debugging, cost control, and agent scorecards |
+| Outcome memory | post-mortems, abnormal returns, false positives, missed catalysts, useful watches, agent performance | raw source payloads | learning what actually worked |
+
+The vector store and graph store are not replacements for the evidence lake. They are indexes and reasoning structures over evidence. Every vector chunk and every graph edge must point back to raw evidence or a versioned derived record.
+
+### How Stored Knowledge Makes The System Smarter
+
+Stored knowledge improves HIVEMIND at the system level:
+
+1. Retrieval improves because agents receive relevant evidence, similar cases, graph neighborhoods, and prior failures instead of a blank prompt.
+2. Routing improves because the router learns which agents, source types, tools, and model tiers worked for each situation family.
+3. Prompts improve because post-mortems create failure checklists and guardrails.
+4. Filters improve because outcome labels tune materiality, valuation, liquidity, and false-positive thresholds.
+5. Future fine-tuning becomes possible after enough high-quality examples exist, but fine-tuning is optional and later.
+
+Important distinction:
 
 ```text
-Agent -> AIModelProvider interface -> concrete provider adapter
+Stored knowledge does not automatically change GPT/Gemini/DeepSeek model weights.
+It makes HIVEMIND smarter because retrieval, routing, critique, scoring, and memory improve around the model.
 ```
 
-Initial providers:
-
-- `MockProvider` for development
-- `GeminiProvider` when key is available
-- `OpenAIProvider` when key is available
-
-This lets HIVEMIND progress even before all API keys are ready.
-
-## 15. Example: Dynacons-Style Flow
-
-1. BSE/NSE announcement fetched.
-2. Raw evidence stored.
-3. Parser detects order-win language.
-4. Amount extractor finds `750 crore`.
-5. Entity resolver maps company to listed instrument.
-6. Materiality engine compares order value to company scale.
-7. Tailwind graph maps event to digital infrastructure/government IT.
-8. Price/volume lane checks market confirmation.
-9. Situation engine emits:
-
-```text
-material_order_win_small_mid_cap
-```
-
-10. Alert explains:
-
-```text
-This is not just news. It is a potentially material company-specific catalyst with policy/tailwind alignment and market confirmation.
-```
-
-Then the AI swarm activates:
-
-1. Event Extraction Agent verifies order value and event type.
-2. Company Context Agent checks whether the order is material relative to the company.
-3. Sector Tailwind Agent maps it to digital infrastructure/government IT.
-4. Price/Volume Agent checks confirmation.
-5. Bear/Critic Agent checks execution risk, margin uncertainty, and whether news is already priced.
-6. Fusion Judge produces the final situation brief.
-
-The model used by each agent can be Gemini, GPT, local, or mock. The agent logic remains the same.
-
-## 16. Example: MTAR-Style Flow
-
-1. Policy/tailwind lane detects defence/space/nuclear/clean-energy strength.
-2. Graph maps MTAR to precision engineering and strategic manufacturing themes.
-3. Price/volume lane detects relative strength.
-4. Search lane investigates recent order book, sector commentary, and filings.
-5. Fundamentals lane checks order book, margins, and customer concentration.
-6. Situation engine emits:
-
-```text
-strategic_manufacturing_tailwind_with_market_confirmation
-```
-
-This is different from Dynacons.
-
-Dynacons is event-led.
-
-MTAR may be theme-led plus market-confirmed.
-
-The architecture must support both.
-
-The AI swarm handles this differently from Dynacons:
-
-- Sector Tailwind Agent becomes more important.
-- Company Context Agent checks strategic manufacturing exposure.
-- Price/Volume Agent checks whether the market is confirming the theme.
-- Search Investigator Agent looks for recent order book, customer, or sector developments.
-- Fusion Judge decides whether this is theme-led, event-led, or price-led.
-
-## 17. Final Architecture
+## 5. System Layers
 
 ```mermaid
 flowchart TD
-    universe["Instrument Universe\nNSE/BSE small + mid caps, SME optional"] --> raw_sources
-
-    raw_sources["Raw Source Layer"] --> official["Official Events\nBSE/NSE/company/regulator"]
-    raw_sources --> market["Market Data\nprice/volume/delivery"]
-    raw_sources --> macro["Macro + Policy\nRBI/SEBI/MoSPI/PIB"]
-    raw_sources --> tenders["Tender + Procurement\nCPPP/GeM/PSU/sector portals"]
-    raw_sources --> search["Search + News Discovery\ntriggered investigation"]
-
-    official --> evidence["Raw Evidence Store"]
-    market --> evidence
-    macro --> evidence
-    tenders --> evidence
-    search --> evidence
-
-    evidence --> normalize["Normalization + Deduplication"]
-    normalize --> events["Structured Events"]
-    normalize --> price_features["Price/Volume Features"]
-    normalize --> tailwinds["Tailwind Events"]
-
-    events --> graph["Company-Sector-Policy-Tender Graph"]
-    price_features --> graph
-    tailwinds --> graph
-
-    graph --> situations["Situation Engines"]
-
-    situations --> swarm["AI Swarm Reasoning Layer"]
-    swarm --> agents["Model-Agnostic Agents"]
-    agents --> provider["AIModelProvider Interface"]
-    provider --> gemini["Gemini Provider"]
-    provider --> gpt["GPT Provider"]
-    provider --> local["Local/Open Provider"]
-    provider --> mock["Mock Provider"]
-
-    agents --> fusion["Fusion Judge"]
-    fusion --> briefs["Situation Briefs"]
-    fusion --> alerts["Watchlist / Alert Queue"]
-    fusion --> research["Investigation Queue"]
+    sources["Raw sources"] --> bronze["Bronze evidence lake"]
+    bronze --> silver["Silver parsed documents and normalized records"]
+    silver --> graph["Event and entity graph"]
+    silver --> features["Feature store: price, valuation, macro, flow, liquidity"]
+    graph --> engines["Situation engines"]
+    features --> engines
+    engines --> router["AI swarm router"]
+    router --> ingestion_agents["Ingestion / source agents"]
+    router --> research_agents["Search / research agents"]
+    router --> quant_agents["Quant / market behavior agents"]
+    router --> sector_agents["Sector / macro specialists"]
+    router --> risk_agents["Risk / valuation / review agents"]
+    ingestion_agents --> synthesis["Synthesis agent"]
+    research_agents --> synthesis
+    quant_agents --> synthesis
+    sector_agents --> synthesis
+    risk_agents --> synthesis
+    synthesis --> briefs["Situation briefs"]
+    synthesis --> queues["Watchlists / research queues / alerts"]
+    briefs --> outcomes["Post-mortems and outcome labels"]
+    outcomes --> graph
+    outcomes --> features
 ```
 
-Layer responsibility:
+## 6. Evidence Layers
 
-| Layer | Responsibility |
+| Layer | Meaning | Stored Objects |
+|---|---|---|
+| Bronze | exact raw evidence | HTML, PDFs, CSV, RSS items, API payloads, search result snapshots |
+| Silver | parsed and normalized evidence | extracted text, tables, entity links, cleaned filings, normalized events |
+| Gold | decision-grade objects | canonical events, features, situations, briefs, alerts, outcome labels |
+
+Rules:
+
+- never skip bronze storage
+- never let AI overwrite raw evidence
+- every gold object traces back to evidence IDs
+- all AI outputs store provider, model, prompt version, evidence IDs, and schema version
+- old raw evidence must be replayable when parsers or models improve
+
+## 7. Situation Engines
+
+Situation engines are the product brain. Each engine has its own logic, features, and validation, so the system does not collapse into a generic score.
+
+| Engine | Detects | Core Question |
+|---|---|---|
+| Issuer Catalyst | order wins, results, capex, ratings, governance | Is the event material relative to company scale, liquidity, valuation, and credit risk? |
+| Credit / Rate Repricing | G-sec curve, credit spreads, ratings, funding stress | Which issuers, sectors, and valuation regimes reprice when yields or spreads move? |
+| Commodity Transmission | crude, gas, metals, freight, inventory cycles | Which issuers benefit or lose through input/output spreads and demand shifts? |
+| FX Exposure | USD/INR, exporter/importer exposure, foreign debt | Which companies are positively or negatively exposed, and are they hedged? |
+| Derivatives / Hedge Context | F&O inclusion, futures basis, options context, hedge availability | Can risk be hedged, is positioning crowded, and what does derivatives behavior imply? |
+| Market Structure Flow | MSCI, FTSE, Nifty/BSE, F&O, surveillance, block/bulk | Are mechanical flows large enough to matter relative to liquidity? |
+| Policy / Tender Tailwind | new tenders, L1 awards, procurement waves, regulation | Which issuers, sectors, inputs, and debt profiles are affected before filings appear? |
+| Valuation Repricing | catalyst plus valuation context | Is the catalyst cheap, priced in, euphoric, or a value trap? |
+
+Every situation object should include:
+
+```json
+{
+  "situation_type": "material_order_win_rerating",
+  "instrument_id": "INSTRUMENT_ID",
+  "trigger_event_id": "EVENT_ID",
+  "evidence_ids": ["EV_1", "EV_2"],
+  "materiality": {
+    "order_value_to_market_cap": 0.18,
+    "order_value_to_revenue": 0.42
+  },
+  "market_behavior": ["volume_expansion", "breakout"],
+  "tailwinds": ["digital_infrastructure", "government_it_spend"],
+  "valuation_context": "fair_with_confirmation",
+  "confidence": 0.78,
+  "uncertainties": ["margin profile undisclosed", "execution duration unclear"]
+}
+```
+
+## 8. AI Swarm Operating Model
+
+The swarm is a set of specialized workers with clear responsibilities, tools, and quality gates.
+
+### Core 10-15 Agent/Worker Set
+
+| Agent / Worker | Responsibility |
 |---|---|
-| Raw Source Layer | Fetch data from official, market, macro, tender, and search sources |
-| Raw Evidence Store | Preserve immutable evidence before AI or parsing changes it |
-| Normalization | Deduplicate, parse, clean, and map records |
-| Graph | Connect companies, sectors, policies, tenders, peers, and price behavior |
-| Situation Engines | Detect specific market situations |
-| AI Swarm | Reason over evidence and produce thesis/risk/context |
-| Model Provider Interface | Keep all agents model agnostic |
-| Fusion Judge | Combine agent views into one final situation brief |
-| Output Layer | Alerts, watchlists, briefs, research queue |
+| Source Health Agent | monitors failures, blocked sources, timestamp delays, schema drift |
+| Evidence Intake Agent | classifies raw evidence type and priority |
+| Filing Parser Agent | extracts order values, customers, dates, tables, and risk disclosures |
+| Entity Resolver Agent | maps aliases, symbols, ISINs, BSE codes, old names, customers, ministries |
+| Market Data Worker | computes price/volume/delivery/liquidity features |
+| Macro/Policy Agent | maps policy, RBI, MoSPI, PIB, budget, regulator events to sectors |
+| Tender Agent | parses tenders and maps eligibility to listed companies |
+| Search Investigator Agent | generates targeted queries and audits missing context |
+| Graph Builder Agent | writes company-sector-policy-tender-event relationships |
+| Price/Volume Agent | interprets confirmation, accumulation, exhaustion, and liquidity risk |
+| Valuation Agent | checks valuation, sector comps, and catalyst pricing |
+| Quant Validator Agent | runs event-study and factor/regime checks |
+| Bull Case Agent | builds the strongest evidence-backed positive thesis |
+| Risk Review Agent | challenges the thesis and rejects unsupported claims |
+| Synthesis Agent | produces final situation brief and follow-up actions |
 
-## 18. First Build Sequence
+### 30-40 Agent Scale
 
-Build in this order:
+Scale by adding specialist pools:
 
-1. Instrument universe
-2. Raw evidence store
-3. BSE/NSE announcement ingestion
-4. Event parser for order wins/results/capex/rating/promoter activity
-5. EOD price-volume scanner
-6. Unexplained price-action investigation queue
-7. Search engine investigation lane
-8. Macro/policy ingestion
-9. Sector/company/tailwind graph
-10. Tender lane
-11. Model-agnostic AI provider interface
-12. MockProvider for local development
-13. AI extraction and explanation agents
-14. Swarm Fusion Judge
-15. Situation engines and alert fusion
+- sector specialists: defence, railways, power, EMS, capital goods, IT infrastructure, data centers, chemicals, pharma, BFSI, metals, shipbuilding, oil/gas, logistics
+- event specialists: order wins, capex, results, credit/rating, governance, promoter actions, M&A, regulatory approval, litigation
+- source specialists: BSE, NSE, SEBI, RBI, MoSPI, PIB, tenders, company IR, rating agencies, search/news
+- quant specialists: momentum, delivery, liquidity, event studies, factor context, regime detection, peer-relative behavior
+- risk specialists: valuation, balance sheet, governance, execution, crowding, liquidity
 
-## 19. What Makes HIVEMIND Different
-
-HIVEMIND is not:
-
-- a stock screener
-- a news scraper
-- a price-action bot
-- a generic AI analyst
-- a single ranking model
-
-HIVEMIND is:
-
-- an evidence capture system
-- a market-change detector
-- a situation engine
-- a company-sector-policy graph
-- an investigation assistant
-- a swing-trading attention system
-
-The output is not "top stocks".
-
-The output is:
+The router activates only the subset needed for the situation.
 
 ```text
-Here are the situations forming in the market.
-Here is the evidence.
-Here is why they may matter.
-Here is what is still uncertain.
-Here is where your attention should go first.
+situation candidate -> router -> selected specialists -> risk review -> synthesis agent
 ```
+
+### Agent Personalities And Biases
+
+Agent personality is not theatrical. It means each agent has an explicit mandate, default bias, retrieval order, evidence-weighting policy, and known blind spots.
+
+| Agent | Productive Bias | Blind Spot To Control |
+|---|---|---|
+| Macro Agent | starts from rates, FX, liquidity, inflation, policy, crude, and global risk | can over-explain company-specific moves with macro narratives |
+| Credit Agent | assumes solvency, spreads, ratings, and funding cost matter first | can underweight equity upside if balance sheet risk looks noisy |
+| Commodity Agent | maps input/output spreads, energy, metals, freight, inventory cycles | can miss demand-side or company execution differences |
+| Equity Catalyst Agent | focuses on materiality of filings, orders, capex, results, governance | can overrate a catalyst if valuation and liquidity are stretched |
+| Derivatives/Hedge Agent | checks F&O status, futures basis, options context, hedge feasibility | can overemphasize short-term positioning noise |
+| Valuation Agent | assumes narratives fail if already priced in | can miss momentum/rerating when fundamentals are genuinely changing |
+| Market Behavior Agent | trusts price, delivery, volume, breadth, liquidity confirmation | can be fooled by thin liquidity and temporary flow |
+| Risk Review Agent | tries to reject weak theses and stale evidence | can become too conservative if not balanced by opportunity agents |
+
+The synthesis agent does not average these views. It preserves useful disagreement, cites evidence, and marks uncertainty.
+
+## 9. Token-Efficient Intelligence
+
+The AI budget is controlled by design, not by hope.
+
+| Method | How HIVEMIND Uses It |
+|---|---|
+| deterministic first pass | rules, parsers, regex, source metadata, and quant features run before LLM calls |
+| model routing | cheap model for classification/extraction; stronger model only for high-value reasoning |
+| prompt caching | repeated company/sector/source instructions and long context packs should be cacheable |
+| evidence IDs | agents receive compact references plus relevant snippets, not full raw documents by default |
+| graph retrieval | bring only the relevant neighborhood, not the whole corpus |
+| hybrid retrieval | BM25 + vector + graph avoids stuffing irrelevant context into prompts |
+| context compression | compress retrieved evidence into source-cited context packs |
+| progressive summaries | old evidence becomes daily/weekly/monthly summaries while raw evidence stays stored |
+| batch jobs | non-urgent extraction and summarization can run on cheaper batch/low-priority lanes |
+| confidence gates | escalate only if confidence is low, evidence is conflicting, or situation value is high |
+
+## 10. Backtesting And Quant Validation Layer
+
+AI explains situations. Quant/backtesting checks whether similar situations actually mattered, whether a hedge would have helped, and whether the system is improving.
+
+Validation questions:
+
+- Did similar events generate abnormal returns?
+- Was the move issuer-specific, sector-wide, rate-driven, commodity-driven, or FX-driven?
+- Did volume/delivery confirm before or after the event?
+- Did the event decay in days or persist for weeks?
+- Did credit spreads, G-sec yields, commodity futures, FX, or derivative hedges change the payoff?
+- Which features predicted false positives?
+- Was valuation already euphoric before the alert?
+
+Backtesting rules:
+
+- point-in-time data only
+- corporate actions and instrument identity handled before returns are computed
+- no survivorship bias
+- explicit costs, slippage, liquidity, and hedge assumptions
+- walk-forward testing for thresholds and ranking
+- event-study windows for situations and portfolio-level replay for strategies
+- report hit rate, payoff distribution, drawdown, turnover, exposure, and deflated Sharpe where relevant
+
+Core windows:
+
+```text
+T-5 to T-1: pre-event accumulation
+T0: event day
+T+1 to T+5: immediate reaction
+T+6 to T+20: swing follow-through
+```
+
+Outcome labels update:
+
+- situation thresholds
+- agent routing
+- model/provider selection
+- retrieval packs
+- risk and hedge rules
+- prompt versions and blind-spot checklists
+
+## 11. Price Action And Valuation
+
+Price action is evidence, not a thesis.
+
+Track:
+
+- 1D, 3D, 5D, 20D, 60D returns
+- sector-relative and market-relative return
+- volume z-score and value traded
+- delivery percentage and delivery quantity z-score
+- breakout, gap, failed breakout, drawdown, volatility expansion
+- block/bulk deals and liquidity regime
+
+Valuation decides how much expectation is already priced in.
+
+Track:
+
+- market cap, enterprise value
+- P/E, EV/EBITDA, price/sales, price/book
+- ROE, ROCE, debt/equity, interest coverage
+- revenue and margin trend
+- order book to market cap and revenue
+- valuation percentile vs own history
+- premium/discount vs sector peers
+
+Keep the distinction clean:
+
+```text
+catalyst = what changed
+price action = whether the market is reacting
+fundamentals = whether the company can convert the catalyst
+valuation = how much is already priced in
+```
+
+## 12. First Build Sequence
+
+1. Instrument universe: listed issuers/securities, ISIN identity, BSE/NSE mappings, market-cap buckets, debt/rates/commodity/FX/derivatives references.
+2. Raw evidence store: source, URL, timestamps, checksum, raw text/path.
+3. Official events: BSE/NSE announcements, RSS/circulars, company filings.
+4. EOD market behavior: bhavcopy, OHLCV, delivery, turnover, corporate actions.
+5. Situation V1: order wins, results, promoter actions, capex, ratings, unexplained price action.
+6. Macro/policy sources: SEBI, RBI, MoSPI/eSankhyiki, PIB, ministries.
+7. Market-structure lane: MSCI/FTSE/Nifty/BSE index events, F&O, ASM/GSM, block/bulk.
+8. Cross-asset lane: crude, gas, metals, USD/INR, yields, global risk, geopolitical shocks.
+9. Tender lane: CPPP, GeM, IREPS, PSU and sector portals.
+10. Ingestion swarm: parser, entity resolver, source health, search audit, graph writer.
+11. AI layer: provider interface, model router, memory/retrieval, specialist agents, synthesis agent.
+12. Quant validation: event-study replay, post-mortems, false-positive labels.
+
+## 13. Moat
+
+The moat is not "we use AI."
+
+The moat compounds through:
+
+- proprietary cleaned Indian market evidence
+- time-aware company-sector-policy-tender graph
+- situation-specific outcome labels
+- missed-catalyst audit history
+- model-agnostic agent prompts and swarm workflows
+- replayable event-study evidence
+- source-health and parsing know-how for messy Indian data
+
+Over time, HIVEMIND learns which situations actually mattered, which were noise, and which agents caught or missed them.

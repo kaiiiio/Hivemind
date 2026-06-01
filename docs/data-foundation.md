@@ -1,12 +1,13 @@
 # HIVEMIND Data Foundation
 
-Status: Canonical implementation and source plan  
-Mode: Free-first, best-effort, swing-trading latency  
-Coverage priority: small caps and mid caps first, large caps second, SME optional  
+Status: canonical data architecture and source plan  
+Mode: free-first, paid-when-it-improves coverage/reliability  
+Latency target: swing-trading best effort, not millisecond execution  
+Coverage priority: full capital-markets foundation; equities/shares, debt/rates, commodities, FX, and derivatives context are all first-class
 
 ## 1. Purpose
 
-The data foundation is the market memory of HIVEMIND.
+The data foundation is HIVEMIND's market memory.
 
 It answers:
 
@@ -14,144 +15,189 @@ It answers:
 - where it came from
 - when it was published
 - when we fetched it
-- which company or sector it affects
-- whether the market confirmed it
+- which issuer, security, sector, commodity, currency, rate, derivative, policy, tender, or market event it affects
+- whether price/volume/valuation confirmed it
 - whether AI can reason over it safely
 
-The data foundation must exist before the AI swarm. Without it, agents become summarizers of whatever happens to be found. With it, every agent receives auditable evidence, timestamps, source freshness, and context.
+AI can improve ingestion, but AI cannot replace the source of truth. Raw evidence must exist before agents reason.
 
-## 2. Executive Decision
+## 2. Source Strategy
 
-Do not rely on AI or search engines as the primary source of market data.
+Use three data tiers together:
 
-Use official exchange, regulator, government, company, and reproducible public sources as the source of truth.
+| Tier | Role | Examples |
+|---|---|---|
+| Official truth | highest-trust evidence and replay | NSE, BSE, MCX, SEBI, RBI, MoSPI, PIB, CCIL, company filings |
+| Paid speed/coverage | stable real-time or broader market-data access | TrueData, Global Datafeeds, Accelpix, Accord, broker APIs |
+| Discovery/audit | find missed context and long-tail news | search engines, curated RSS, trade media, company sites, GitHub packages |
 
-Use AI only after raw evidence is stored.
+The system should never depend on only one tier.
 
-Use search engines only for triggered investigation, source discovery, and missed-event audit.
+## 3. Historical Data Backbone
 
-## 3. Coverage Goal
+Historical data is mandatory. It is not a later add-on and it is not the same problem as live market data.
 
-The ingestion layer must not filter out companies because they are small, illiquid, outside major indices, or poorly covered by media.
+HIVEMIND needs historical data for:
 
-Mandatory:
+- event-study validation
+- replaying what the system would have known at a past timestamp
+- training situation thresholds
+- detecting false positives and missed catalysts
+- sector-relative and market-relative returns
+- valuation history and "priced in" checks
+- macro shock transmission analysis
+- hedge and risk-offset analysis across futures/options where available
+- source reconciliation and data-quality audits
 
-- NSE mainboard
-- BSE mainboard
-- BSE-exclusive equities
-- small-cap and mid-cap coverage
-- ISIN-first identity mapping where possible
-- NSE symbol, BSE scrip code, company aliases, and old names
+Required historical datasets:
 
-Optional but supported:
+| Historical Dataset | Minimum Need | Why It Matters |
+|---|---|---|
+| daily OHLCV and delivery | all NSE/BSE equities, adjusted for corporate actions where possible | base replay, swing windows, liquidity, delivery confirmation |
+| intraday candles | 1-minute or 5-minute where affordable; 5 years is useful | event timestamp reaction, gap/follow-through quality, liquidity |
+| tick/depth history | optional for later; not needed for swing MVP | microstructure, slippage, order-flow research |
+| corporate announcements and filings | raw PDFs/HTML plus parsed fields | event chronology and source-of-truth replay |
+| corporate actions | splits, bonuses, dividends, symbol changes, mergers | adjusted price history and identity continuity |
+| fundamentals and valuations | market cap, ratios, results, margins, debt, order book where available | "priced in" checks and business-quality context |
+| macro/commodity/rates history | RBI, MoSPI, CCIL, MCX/global crude/metals/FX/yields | macro shock and sector exposure replay |
+| derivatives and hedge context | F&O status, futures basis, options context, margin/risk where available | hedge feasibility and risk-offset replay |
+| index/flow history | MSCI/FTSE/Nifty/BSE changes, F&O status, ASM/GSM, block/bulk | market-structure flow event studies |
 
-- NSE SME
-- BSE SME
+The storage rule:
 
-Small and mid caps are mandatory because one contract, pledge release, rating upgrade, tender win, or policy tailwind can re-rate the stock faster than in large caps.
+```text
+historical raw/backfill -> normalized point-in-time features -> event windows -> outcome labels
+```
 
-## 4. Source Priority Model
+Do not only store the latest value. For every feature used in a situation brief, store the value as of the event timestamp.
 
-| Priority | Source Type | Role | Trust Level |
+## 4. Recommended Market-Data Plan
+
+### Best Price-To-Result Recommendation
+
+Start with official/free sources plus one broker or vendor feed, then upgrade to an authorized market-data vendor when coverage and reliability become the bottleneck.
+
+| Stage | Choice | Why |
+|---|---|---|
+| Local prototype | NSE/BSE bhavcopy and historical public downloads, BSE/NSE announcements, SEBI/RBI/MoSPI/PIB, CCIL, public commodity/FX/yield sources, derivative eligibility lists | Free, auditable, enough for EOD/swing discovery and first historical replay. |
+| MVP historical + live beta | DhanHQ, Zerodha, FYERS, Breeze, Upstox, Angel SmartAPI as historical/live auxiliary APIs plus official EOD reconciliation | Confirmed public prices: DhanHQ Data API is listed at Rs 499 + taxes/month and includes daily/intraday historical APIs; Zerodha Connect is listed at Rs 500/month with historical candle data. FYERS, Breeze, Upstox, and Angel SmartAPI currently show free API access, subject to account eligibility and limits. |
+| Serious beta | Accelpix and TrueData/Global Datafeeds pilots | Confirmed public benchmarks: Accelpix plans are listed at Rs 1,355 to Rs 2,965/month + GST and include EOD/intraday/tick history by plan; TrueData Velocity is listed at Rs 1,439.83 to Rs 2,795.83/month per segment. TrueData Market Data API and Global Datafeeds raw/API terms should be quoted directly for live + historical coverage. |
+| Enterprise/product distribution | Direct exchange/vendor contracts and legal review | NSE domestic pricing effective April 1, 2026 lists examples such as CM EOD at Rs 1,00,000/year, CM historical trade data at Rs 1,10,000/year, and CM L1 internal display at Rs 24,40,000/year. BSE/MCX and redistribution rights are separate. |
+
+Practical answer: for a founder beta, use free official sources plus Dhan/Zerodha/FYERS/Angel/ICICI only as auxiliary feeds. For "I need all capital-market data across shares, debt, commodities, FX and derivatives," budget for authorized vendors and exchange licensing after proof of concept. Broker APIs are cheap but account-tied and not a durable institutional market-data layer.
+
+### Vendor Notes
+
+| Provider | What The Source Says | Use In HIVEMIND | Caveat |
 |---|---|---|---|
-| P0 | NSE/BSE filings and announcements | Corporate events, results, order wins, disclosures | Highest |
-| P0 | NSE/BSE bhavcopy and reports | EOD price, volume, delivery, corporate actions | Highest |
-| P0 | Security master files | Tradable universe and identifiers | Highest |
-| P1 | SEBI/RBI/MoSPI/PIB releases | Regulation, macro, policy tailwinds | High |
-| P1 | Government procurement portals | Tender and order pipeline clues | High but fragmented |
-| P2 | Company investor relations pages | Press releases, presentations, annual reports | High |
-| P2 | Reputed news and sector publications | Context, discovery, narrative confirmation | Medium |
-| P3 | GitHub packages and unofficial APIs | Engineering acceleration | Verify against official data |
-| P3 | Search engines | Missed-event audit and source discovery | Fallback only |
-
+| TrueData | Market Data API page says authorized access to NSE, BSE, and MCX; pricing depends on exchange, symbols, and data type; exchange fees may be separate. Public Velocity pricing lists Rs 1,439.83 to Rs 2,795.83/month per segment. | Strong candidate for serious beta market feed. | Get direct quote for Market Data API subscription and license terms. Do not present Velocity pricing as final API pricing. |
+| Global Datafeeds | Site says authorized realtime L1 vendor of NSE, MCX, BSE, NCDEX, and fundamental data. | Strong candidate where broad authorized coverage matters. | Pricing/API details require direct sales quote. |
+| Accelpix | Public pricing lists Smart Rs 1,355/month, Pro Rs 2,118/month, and Ultimate Rs 2,965/month + GST, with symbol-at-a-time limits and current-day tick/1-minute/EOD history differences. API page says data is licensed for subscriber charting/analysis. | Good price-to-result for personal/research/charting workflows. | Verify limits, symbols-at-a-time, redistribution, and API terms. |
+| DhanHQ | Support page lists Data API subscription at Rs 499 + taxes/month for live feed, quotes, historical, intraday. Docs say daily historical data is available back to stock inception and intraday historical data is available for the last 5 years in 1/5/15/25/60 minute intervals, with 90-day request windows. | Cheap MVP live + historical data lane. | Broker account dependency, rate limits, and quality checks required. |
+| Zerodha Kite Connect | Support page lists Connect at Rs 500/month with real-time WebSockets and historical candles; Personal plan has no historical/real-time data. Docs describe archived candle data across exchanges in minute/3-minute/5-minute/hourly/daily intervals. | Cheap, well-documented MVP live + historical auxiliary lane. | Broker account dependency and app/user constraints. |
+| FYERS / ICICI Breeze / Upstox / Angel SmartAPI | Official pages describe free APIs with market-data and historical-data capabilities. Breeze states historical data/API access is free for ICICIdirect customers; Angel SmartAPI FAQ states historical data is free and available for all segments. | Useful auxiliary historical/live feeds and cross-checks. | Quality, rate limits, authentication, static-IP requirements, and historical depth must be tested. |
 ## 5. Source Matrix
 
-| Source Class | Public Source | What To Ingest | Cadence | Priority |
-|---|---|---|---|---|
-| Exchange EOD | NSE all reports, BSE bhavcopy | OHLCV, turnover, delivery, corporate actions | EOD | P0 |
-| Security master | NSE/BSE listed security files | symbol, ISIN, series/group, active status, SME flag | daily + weekly diff | P0 |
-| Corporate announcements | NSE/BSE announcements and RSS | raw announcement, PDF/XBRL, title, timestamp, ticker | 15-60 sec best effort where allowed | P0 |
-| Regulator | SEBI RSS/orders/circulars | circulars, enforcement, orders, market rules | 1-5 min | P1 |
-| Macro | RBI, MoSPI/eSankhyiki | rates, liquidity, inflation, IIP, GDP, sector indicators | daily/weekly/monthly | P1 |
-| Policy | PIB, ministries, cabinet releases | schemes, capex, procurement, sector policy | 5-60 min by source | P1 |
-| Tenders | CPPP/eProcure, GeM, IREPS, PSU portals | new tenders, awards, L1, procurement plans | daily first, faster later | P1/P2 |
-| Company websites | IR pages and press releases | press releases, order details, presentations | candidate-triggered + daily | P2 |
-| News/RSS | financial and sector media | headline, URL, timestamp, mentioned entities | source dependent | P2 |
-| Search engine | DuckDuckGo/other search | missed-event check, source discovery | triggered + daily audit | P3 |
-
-## 6. Useful GitHub Repos And Packages
-
-These tools can accelerate development, but should be wrapped behind our own adapter interfaces.
-
-| Tool | Language | Potential Use | Link |
+| Source Class | Sources | What To Store | Cadence |
 |---|---|---|---|
-| jugaad-data | Python | NSE historical/bhavcopy helpers | https://github.com/jugaad-py/jugaad-data |
-| nse-bse-api | TypeScript | Unified NSE/BSE wrappers | https://github.com/bshada/nse-bse-api |
-| BseIndiaApi | Python | BSE announcements/actions helper | https://github.com/BennyThadikaran/BseIndiaApi |
-| NseIndiaApi | Python | NSE unofficial API helper | https://github.com/BennyThadikaran/NseIndiaApi |
-| Indian-Stock-Market-API | Python/Flask | Yahoo-backed NSE/BSE quote API | https://github.com/0xramm/Indian-Stock-Market-API |
-| bhavCopy-downloader | JavaScript/Go | NSE/BSE bhavcopy downloader | https://github.com/girishg4t/bhavCopy-downloader |
-| stocky | Python | ISIN/symbol mapping | https://github.com/rehanhaider/stocky |
-| bseindia | Python | BSE public data wrapper | https://pypi.org/project/bseindia/ |
+| Equity official events | BSE announcements/RSS, NSE announcements/RSS, company filings | announcements, PDFs, XBRL, timestamps, categories, raw text | hot: 15-60 sec best effort where permitted |
+| Equity EOD | NSE/BSE bhavcopy, all reports, delivery, corporate actions | OHLCV, turnover, delivery, series/group, corporate actions | EOD |
+| Security master | NSE/BSE listed security files, ISIN mapping | instrument universe, aliases, BSE code, NSE symbol, SME flag, status | daily + weekly diff |
+| Commodities/metals | MCX official datafeed/bhavcopy, paid vendor, global metals references | futures/spot where available, crude/gas/metals moves | EOD first; faster later |
+| Bonds/rates | RBI DBIE, CCIL bond/money-market data, G-sec yields | rates, yields, liquidity, bond-market indicators | daily/monthly by source |
+| Derivatives/hedging | NSE/BSE F&O lists, futures/options snapshots from broker/vendor where permitted | F&O eligibility, futures basis, options context, hedge availability | EOD first; faster later |
+| Macro | RBI DBIE, MoSPI/eSankhyiki, CPI/WPI/IIP/GDP, FRED/World Bank where relevant | macro indicators and release timestamps | release-driven |
+| Policy/regulatory | PIB RSS, SEBI RSS, RBI, ministries, cabinet releases | policy events, schemes, circulars, enforcement, sector tags | 1-60 min |
+| Tenders/procurement | CPPP, GeM, IREPS, PSU portals, sector portals | tender title, buyer, amount, dates, eligibility, L1/award | daily first |
+| Market structure | MSCI, FTSE Russell, NSE/BSE index notices, AMFI classification, F&O lists, ASM/GSM, block/bulk | inclusion/exclusion, weight changes, effective dates, flow estimates | event-driven |
+| Search/news | DuckDuckGo/search APIs, RSS, trade media, company IR | result metadata, snippets, article text, source quality | triggered |
 
-Package policy:
+## 6. Ingestion Swarm
 
-- prefer official-source adapters for core ingestion
-- use packages to learn endpoints and speed early development
-- compare package output against raw official records
-- store source name, package version, fetch timestamp, and URL
-- never let a package become the only evidence source for material events
+Data ingestion needs its own swarm because the hard problem is not just fetching. It is cleaning, resolving, reconciling, and not missing edge cases.
 
-## 7. Processing Lanes
+### First 10-15 Workers/Agents
 
-The data foundation should not be one giant scraper. It should be a set of lanes, each with its own trigger and evidence rules.
+| Agent / Worker | Job |
+|---|---|
+| Scheduler Worker | runs source-specific polling jobs with backoff and market-calendar awareness |
+| Source Health Agent | detects source downtime, schema drift, Cloudflare/blocking, timestamp anomalies |
+| Raw Evidence Worker | stores every fetched payload with checksum before parsing |
+| PDF/XBRL Parser Agent | extracts text, tables, values, and filing sections |
+| CSV/API Normalizer Worker | normalizes bhavcopy, delivery, index, and vendor payloads |
+| Entity Resolver Agent | maps company names, aliases, symbols, BSE codes, ISINs, customers, ministries |
+| Event Classifier Agent | classifies order wins, results, capex, rating, governance, policy, tender, flow events |
+| Materiality Agent | computes order size vs market cap/revenue/order book, event severity, liquidity impact |
+| Cross-Asset Mapper Agent | maps crude, metals, FX, rates, geopolitical risk, and freight to sector/company exposure |
+| Tender Mapper Agent | maps tender categories to likely listed beneficiaries |
+| Search Auditor Agent | runs targeted missed-event and unexplained-move investigations |
+| Graph Writer Agent | writes company-sector-policy-tender-customer-event relationships |
+| Dedupe/Synthesis Worker | merges duplicate filings/articles/vendor records into canonical events |
+| Quality Gate Agent | rejects unsupported AI claims and marks DATA_GAP when evidence is weak |
+| Feature Writer Worker | writes price, valuation, flow, macro, and situation feature snapshots |
 
-| Lane | Question | First Sources | Output |
+## 7. Processing Policy
+
+Do not process every source with the same intensity.
+
+| Stage | Run For | Cost |
+|---|---|---|
+| deterministic fetch and raw storage | full universe | low |
+| rules/parsers/features | full universe | low/medium |
+| cheap AI extraction | new filings, PDFs, tenders, unclear categories | medium |
+| search investigation | only triggered candidates and audit lists | medium |
+| multi-agent research | only active situation candidates | high |
+| strongest model final brief | only user-facing/high-priority situations | highest |
+
+This is how broad coverage stays affordable.
+
+## 8. Data Freshness Tiers
+
+| Tier | Target | Sources | Use |
 |---|---|---|---|
-| Official Events | Did the company disclose something material? | BSE/NSE/company filings | structured corporate event |
-| Price/Volume | Is the market behaving like something changed? | bhavcopy, delivery, OHLCV | market behavior event |
-| Macro/Policy | Did policy or macro improve a sector outlook? | RBI, SEBI, MoSPI, PIB, ministries | tailwind event |
-| Tender/Procurement | Are future orders forming before company disclosure? | CPPP, GeM, IREPS, PSU portals | tender pipeline event |
-| Search/News | Is there public context not captured elsewhere? | search, media, trade publications | candidate evidence |
-| Fundamentals | Can the company benefit from the catalyst? | results, annual reports, presentations | business quality context |
-
-## 8. Ingestion Pipeline
-
-| Stage | Component | Behavior | Storage Output |
-|---|---|---|---|
-| 1 | Universe Builder | Builds full NSE/BSE universe, aliases, ISIN mapping, SME flag | instruments |
-| 2 | Source Pollers | Fetches announcements, RSS, bhavcopy, circulars, tenders | raw_evidence candidates |
-| 3 | Raw Evidence Store | Stores raw content, URL, timestamps, checksum | raw_evidence |
-| 4 | Parser Layer | Extracts text/tables from HTML, CSV, PDF, XBRL | parsed_document |
-| 5 | Entity Resolver | Maps names, symbols, scrip codes, ISINs | document_instrument_link |
-| 6 | Event Extractor | Rules first, AI second; creates structured events | parsed_events |
-| 7 | Dedupe + Fusion | Merges same event across exchange/company/news sources | canonical_events |
-| 8 | Situation Engines | Creates material order-win, tailwind, tender, price-action situations | situations |
-| 9 | Alert Scorer | Computes situation-specific attention priority | alerts |
-| 10 | Memory Writers | Writes timeseries, vectors, graph relationships, hot state | AI layer inputs |
+| Hot | 15-60 sec best effort | BSE/NSE announcements, selected RSS, paid feed if available | material corporate events |
+| Warm | 1-10 min | SEBI, PIB, company sites, curated news, vendor snapshots | regulatory/policy/context updates |
+| Batch | EOD | bhavcopy, delivery, valuation snapshots, CCIL/RBI/MoSPI updates | daily situation scoring and replay |
+| Audit | daily/weekly | search, GitHub/open-source checks, source diffs | missed-event detection |
 
 ## 9. Storage Model
 
 Minimum tables:
 
-| Table | Purpose | Important Fields |
-|---|---|---|
-| instruments | one row per listed/tradable instrument | instrument_id, ISIN, NSE symbol, BSE code, name, sector, market cap bucket, SME flag |
-| raw_evidence | immutable evidence before parsing | source, URL, fetched_at, published_at, checksum, raw_path, raw_text |
-| parsed_document | extracted text/tables | evidence_id, parser_version, text, table_json, parse_quality |
-| parsed_events | structured event candidates | event_type, instrument_id, amount, confidence, evidence_span |
-| canonical_events | deduped event | event_id, primary_instrument_id, source_priority, severity, summary |
-| price_daily | EOD price/volume | instrument_id, date, OHLCV, turnover |
-| delivery_daily | delivery confirmation | instrument_id, date, delivery_qty, delivery_pct |
-| tailwind_events | macro/policy/tender context | source, title, sectors_impacted, tags, time_horizon |
-| situations | thesis candidates | situation_type, evidence_ids, company, materiality, uncertainty |
-| alerts | final attention queue | situation_id, priority, reason, status |
-| source_health | source monitoring | source_name, last_success_at, latency, error_rate, blocked_flag |
-| ingestion_audit | run-level audit | run_id, source, records_seen, records_new, records_failed |
+| Table | Purpose |
+|---|---|
+| instruments | one row per tradable/listed instrument with ISIN, NSE symbol, BSE code, aliases, sector, cap bucket, SME flag |
+| source_registry | source URL/API, trust level, cadence, owner, ToS notes |
+| raw_evidence | immutable source payloads with URL, timestamps, checksum, raw path/text |
+| parsed_documents | extracted text, tables, parser version, parse quality |
+| entity_links | document/company/security/customer/ministry/sector links |
+| parsed_events | event candidates extracted from evidence |
+| canonical_events | deduped decision-grade events |
+| price_daily | OHLCV, turnover, value traded |
+| delivery_daily | delivery quantity and percentage |
+| valuation_snapshots | market cap, multiples, growth/margins/debt/order book |
+| market_structure_events | MSCI/FTSE/Nifty/BSE/F&O/surveillance/block/bulk events |
+| macro_shock_events | crude, metals, FX, rates, geopolitical, freight, and global-risk events |
+| tailwind_events | policy, budget, regulator, sector, tender tailwinds |
+| situations | situation candidates with evidence IDs and feature snapshots |
+| model_runs | provider/model/prompt/evidence/output/cost audit |
+| source_health | latency, failures, schema drift, blocked flags |
+| ingestion_audit | run-level counts, misses, failures, freshness |
+
+Storage policy:
+
+- raw evidence is the canonical archive
+- parsed tables and facts go to relational/columnar stores
+- market data and derived features go to time-series/feature tables
+- embeddings go to vector stores only for searchable chunks and similarity retrieval
+- relationships go to graph tables or a graph database
+- agent outputs, prompt versions, context packs, and costs go to model-run tables
+- outcomes and post-mortems go to outcome memory
+- every vector chunk and graph edge must link back to raw evidence or a versioned derived record
 
 ## 10. Event Taxonomy V1
 
-Corporate events:
+Corporate:
 
 - order_win
 - contract_extension
@@ -162,15 +208,56 @@ Corporate events:
 - debt_reduction
 - fundraise
 - promoter_buying
-- insider_trade
+- promoter_pledge_change
 - rating_upgrade
 - merger_acquisition
-- product_launch
 - regulatory_approval
 - litigation_risk
-- pledge_change
+- governance_risk
 
-Macro/policy events:
+Market behavior:
+
+- volume_expansion
+- delivery_spike
+- breakout
+- failed_breakout
+- relative_strength
+- unexplained_gap
+- multi_day_accumulation
+- liquidity_discovery
+
+Market structure:
+
+- MSCI_inclusion
+- MSCI_exclusion
+- FTSE_inclusion
+- FTSE_exclusion
+- Nifty_index_inclusion
+- Nifty_index_exclusion
+- BSE_index_inclusion
+- BSE_index_exclusion
+- FNO_inclusion
+- FNO_exclusion
+- ASM_GSM_surveillance
+- bulk_deal
+- block_deal
+- passive_flow_rebalance
+
+Macro shock:
+
+- crude_oil_shock
+- natural_gas_shock
+- metal_price_shock
+- USDINR_shock
+- bond_yield_shock
+- geopolitical_escalation
+- sanctions
+- shipping_disruption
+- global_risk_off
+- import_export_policy_change
+- supply_chain_disruption
+
+Policy/tender:
 
 - rate_cut
 - rate_hike
@@ -179,206 +266,145 @@ Macro/policy events:
 - PLI_scheme
 - import_duty_change
 - export_incentive
-- government_capex
-- sector_policy_change
 - defence_procurement
 - railway_capex
 - renewable_policy
 - data_center_policy
-- digital_infra_policy
-
-Tender/procurement events:
-
 - new_tender
 - tender_corrigendum
-- tender_award
 - L1_result
-- GeM_bid
-- PSU_procurement_plan
+- tender_award
 
-Market behavior events:
+## 11. Search Engine Use
 
-- volume_expansion
-- delivery_spike
-- breakout
-- relative_strength
-- unexplained_gap
-- multi_day_accumulation
-- sector_rotation
+Search engines should be used aggressively but intelligently.
 
-## 11. Smart Search Engine Use
+Bad:
 
-Search engines are not a live market data feed.
+```text
+Search the whole web for all market news.
+```
 
-Use search when there is a reason to investigate:
+Good:
 
-- unexplained price action
-- high-materiality official event
-- policy tailwind with unclear beneficiaries
-- tender category with possible listed beneficiaries
-- company enters watchlist
-- daily missed-event audit
+```text
+Unexplained price action detected.
+Generate targeted queries using company aliases, sector, suspected event, date range, tenders, and filings.
+Store result metadata.
+Classify source quality.
+Verify against official sources where possible.
+Attach evidence to the situation.
+```
 
-Search workflow:
-
-1. Generate targeted queries from company aliases, sector, event suspicion, and date range.
-2. Fetch candidate results from available search sources.
-3. Store search result metadata as evidence.
-4. Classify source quality.
-5. Extract candidate evidence.
-6. Verify against official or high-trust sources when possible.
-7. Attach findings to a situation.
+Search outputs candidate evidence, not truth.
 
 Source quality:
 
 | Level | Source | Use |
 |---|---|---|
-| A | exchange, regulator, government, company | truth source |
-| B | reputed financial media, rating agency | strong context |
-| C | sector, trade, local media | discovery |
-| D | social, forums, SEO aggregators | weak clue only |
+| A | exchange, regulator, government, company | truth |
+| B | rating agencies, reputed financial media | strong context |
+| C | trade/local/sector publications | discovery |
+| D | social/forums/SEO aggregators | weak clue only |
 
-## 12. AI In The Data Foundation
+## 12. AI-Assisted Research And Knowledge Intake
 
-AI can make ingestion smarter, but only after raw evidence is stored.
+Data ingestion should not be manual. AI should help discover sources, parse documents, reconcile entities, and audit misses, while deterministic storage preserves raw evidence.
 
-Use AI for:
+### Research Prompt Intake
 
-- company/entity matching
-- announcement classification
-- PDF/text summarization
-- amount/customer/timeline extraction
-- sector/tailwind tagging
-- tender-to-company matching
-- duplicate clustering
-- explanation generation
+Complex prompts should be stored as `research_jobs`, not handled as disposable chat.
 
-Do not use AI for:
+Example job classes:
 
-- price data
-- invented financial metrics
-- unsupported event claims
-- final alerts without evidence links
+| Job Class | Example | Data Foundation Work |
+|---|---|---|
+| forensic equity screen | broker target upside plus ROCE/CFO/debt/pledge/growth filters | broker PDF archive, earnings tables, shareholding data, valuation snapshots |
+| unexplained price-action audit | price run without visible official news | price window, search results, exchange filings, sector/news audit |
+| policy/tender beneficiary map | new scheme, tender wave, budget allocation | tender records, ministry/PSU buyer graph, listed supplier links |
+| macro shock study | crude, metals, FX, rates, geopolitical shock | commodity/FX/rate time series, sector exposure graph, margin sensitivity |
+| market-structure event | MSCI/FTSE/index/F&O inclusion | index notices, effective dates, flow estimates, liquidity history |
 
-Every AI output must include:
+Each research job writes:
 
-- source evidence id
-- extracted fields
-- confidence
-- uncertainty
-- evidence quote/span
+- job spec and prompt
+- source plan
+- raw evidence IDs
+- extracted facts
+- accepted candidates
+- rejected candidates and reasons
+- agent outputs and debate summaries
+- final report
+- later outcome labels
 
-## 13. Scoring Philosophy
+### Knowledge Artifact Types
 
-The system should not create one generic stock score first.
+| Artifact | Truth Status | Use |
+|---|---|---|
+| official filing/source record | verified evidence | can support facts |
+| broker report | institutional evidence | can support target, estimates, and thesis with date/source |
+| news/trade article | contextual evidence | discovery and triangulation |
+| user observation | hypothesis | trigger search, never treated as verified fact |
+| AI-generated note | derived artifact | routing/search aid, not source of truth |
+| post-mortem | outcome evidence | improves thresholds, prompts, routing, and guardrails |
 
-It should create situation-specific scores:
+### AI Ingestion Rules
 
-- order_win_score
-- tailwind_score
-- price_action_score
-- tender_pipeline_score
-- result_rerating_score
-- theme_rotation_score
+- AI may generate search queries, source lists, parser hints, entity candidates, and missing-evidence audits.
+- AI may extract facts from documents only when it returns spans, tables, page numbers, source URLs, timestamps, and confidence.
+- AI may propose new source adapters, but adapters must still store raw payloads and pass reconciliation tests.
+- AI may summarize knowledge artifacts, but summaries must never replace raw evidence.
+- AI may update agent lessons from post-mortems, but prompt and routing changes must be versioned.
 
-Then it should produce an attention priority from the strongest active situation.
+## 13. GitHub And Package Policy
 
-Example factors:
+Useful packages can accelerate early work but must be wrapped behind HIVEMIND adapters.
 
-| Factor | Meaning |
-|---|---|
-| source trust | exchange/regulator/company beats media/search |
-| event materiality | order size vs market cap/revenue/order book |
-| small/mid-cap relevance | higher sensitivity to catalyst size |
-| tailwind match | sector/policy/tender alignment |
-| market confirmation | price, volume, delivery, relative strength |
-| recency | fresh evidence gets priority |
-| novelty | duplicate and stale news is penalized |
-| risk modifier | governance, pledge, litigation, execution risk |
+| Package/Repo | Use | Policy |
+|---|---|---|
+| jugaad-data | NSE/bhavcopy helpers | verify output against official records |
+| nsepython / NseIndiaApi | public NSE endpoint helpers | use for learning/endpoints, not as sole truth |
+| BseIndiaApi / bseindia | BSE public data helpers | verify and store raw URLs |
+| yfinance | broad global fallback | useful for global context, not official Indian data |
+| broker SDKs | live quotes/websocket and historical candles | reconcile with official EOD |
 
-## 14. Dynacons-Style Replay Test
+Rules:
 
-Dynacons-style events should be regression tests.
+- store package name/version in ingestion audit
+- keep our own source adapters
+- raw official evidence wins over package output
+- test packages for silent schema changes
+- never rely on undocumented scraping for investor-grade claims without reconciliation
 
-Expected flow:
-
-1. Fetch exchange/company announcement.
-2. Store raw evidence before parsing.
-3. Resolve company to NSE/BSE/ISIN identity.
-4. Extract order value, counterparty, duration, and event type.
-5. Compare order value to company scale.
-6. Map sector and tailwind tags.
-7. Check price/volume confirmation.
-8. Emit a high-attention situation even if mainstream media has not covered it yet.
-
-Expected situation:
-
-```json
-{
-  "situation_type": "material_order_win_small_mid_cap",
-  "event_type": "order_win",
-  "event_amount_inr_cr": 750,
-  "tailwinds": ["government_it_spend", "digital_infrastructure"],
-  "evidence_strength": "official",
-  "market_confirmation": "pending_or_present"
-}
-```
-
-## 15. Latency Tiers
-
-| Tier | Target | Sources | Use Case |
-|---|---|---|---|
-| Hot | 15-60 seconds best effort | BSE/NSE announcements where stable | material announcements |
-| Warm | 1-10 minutes | SEBI RSS, company pages, curated RSS | regulatory and narrative context |
-| Batch | EOD | bhavcopy, delivery, security master | backtesting and daily scoring |
-| Audit | daily/weekly | search, media sweeps, source diffs | missed-event detection |
-
-## 16. Free Infrastructure
-
-| Function | Recommended Free Component |
-|---|---|
-| scheduler | APScheduler or cron first |
-| HTTP ingestion | httpx or aiohttp with rate limits and backoff |
-| RSS | feedparser |
-| parsing | pandas, BeautifulSoup, lxml, pypdf/PyMuPDF |
-| database | SQLite first, PostgreSQL/TimescaleDB later |
-| hot state | Redis |
-| vector store | Qdrant |
-| graph | Neo4j Community |
-| search index | PostgreSQL full text first |
-| monitoring | source_health and ingestion_audit tables first |
-
-## 17. Sprint 1 Scope
+## 14. Sprint 1 Scope
 
 Mandatory:
 
-- instrument master
-- raw evidence store
-- adapter interface
-- BSE/NSE announcement ingestion
-- EOD price/volume ingestion
-- event parser for order wins, results, capex, ratings, promoter activity
-- basic situation scoring
-- Dynacons replay
+1. instrument master
+2. raw evidence store
+3. adapter interface
+4. BSE/NSE announcement ingestion
+5. EOD price/volume ingestion
+6. basic event parser for order wins, results, capex, ratings, promoter activity
+7. source health table
+8. material order-win situation replay
 
 Optional:
 
-- SME coverage
+- SME board coverage
+- paid broker feed adapter
 - tender discovery
 - search audit
 - AI extraction fallback
 
 Out of scope:
 
-- paid feeds
-- tick-level streaming
-- millisecond latency
 - execution/trading automation
-- portfolio recommendation automation
+- millisecond tick processing
+- redistributing paid market data
+- recommendation automation without evidence and risk controls
 
-## 18. First Implementation Files
-
-Start with:
+## 15. First Implementation Files
 
 ```text
 hivemind/data_foundation/models.py
@@ -386,43 +412,36 @@ hivemind/data_foundation/storage/sqlite_store.py
 hivemind/data_foundation/adapters/base.py
 hivemind/data_foundation/adapters/bse/announcements.py
 hivemind/data_foundation/adapters/nse/announcements.py
+hivemind/data_foundation/adapters/marketdata/broker_feed.py
 hivemind/data_foundation/parsing/events.py
 hivemind/data_foundation/scoring/swing_score.py
 hivemind/data_foundation/cli/run_once.py
 ```
 
-Use SQLite first for speed. Move to PostgreSQL/TimescaleDB after source adapters and schemas stabilize.
+Use SQLite first for speed. Move to PostgreSQL/TimescaleDB after schemas and adapters stabilize.
 
-## 19. Sprint 1 Milestones
+## 16. Reference Links
 
-| Milestone | Deliverable | Acceptance |
-|---|---|---|
-| Universe | instrument master, symbol mapping, cap bucket, SME flag | every event maps to an instrument or unresolved queue |
-| Raw Evidence | raw_evidence table, content hash, adapter base | no fetched item is parsed before being stored |
-| Announcements | BSE/NSE announcement adapters | order-win, results, corporate action, rating events detected |
-| Price/Volume | bhavcopy ingestion and OHLCV table | alerts show 1-day, 3-day, 5-day context |
-| Tailwinds | SEBI/RBI/MoSPI/PIB ingestion | policy events map to sectors and candidate companies |
-| Dynacons Replay | historic replay script | material order-win situation is detected and explained |
-
-## 20. Acceptance Criteria
-
-- security master covers NSE mainboard, BSE mainboard, BSE-exclusive names, and optional SME boards
-- EOD ingestion validates missing or malformed files
-- announcements are stored as raw evidence before parsing or AI calls
-- every AI-extracted event cites evidence id, source URL, timestamp, and confidence
-- Dynacons-style order-win replay emits high attention without relying on media coverage
-- daily audit compares exchange announcements, RSS/media, and search results for misses
-- agents receive `DATA_GAP` when evidence freshness or quality is insufficient
-
-## 21. Reference Links
-
-- NSE all reports: https://www.nseindia.com/all-reports
-- NSE corporate announcements: https://www.nseindia.com/companies-listing/corporate-filings-announcements
-- NSE corporate data subscriptions: https://www.nseindia.com/market-data/corporate-data-subscription
-- BSE bhavcopy: https://www.bseindia.com/markets/MarketInfo/BhavCopy.aspx
+- NSE real-time data subscription: https://www.nseindia.com/market-data/real-time-data-subscription
+- NSE RSS: https://www.nseindia.com/rss-feed
+- BSE market data products: https://www.bseindia.com/market_data_products.html?flag=real
 - BSE RSS feeds: https://www.bseindia.com/rss-feed.html
+- MCX datafeed: https://www.mcxindia.com/technology/datafeed
+- CCIL bond market data: https://www.ccilindia.com/web/ccil/bond-market
 - SEBI RSS: https://www.sebi.gov.in/rss.html
 - RBI DBIE: https://data.rbi.org.in/DBIE/
-- eSankhyiki: https://www.esankhyiki.com/
-- NIC eProcurement: https://www.nic.gov.in/project/government-e-procurement-system/
-
+- MoSPI eSankhyiki Python library: https://www.mospi.gov.in/esankhyiki-python-library
+- PIB RSS: https://www.pib.gov.in/ViewRss.aspx?lang=1&reg=20
+- TrueData Market Data API: https://www.truedata.in/market-data-apis
+- TrueData pricing: https://www.truedata.in/information/pricing
+- Global Datafeeds: https://globaldatafeeds.in/
+- Accelpix pricing: https://accelpix.com/pricing/
+- Accelpix APIs: https://accelpix.com/pix-apis/
+- DhanHQ data API support: https://dhan.co/support/platforms/dhanhq-api/how-can-i-access-live-market-data-through-dhan/
+- DhanHQ historical data docs: https://dhanhq.co/docs/v2/historical-data/
+- Zerodha Kite API charges: https://support.zerodha.com/category/trading-and-markets/general-kite/kite-api/articles/what-are-the-charges-for-kite-apis
+- Zerodha historical candle docs: https://kite.trade/docs/connect/v3/historical/
+- FYERS API: https://fyers.in/products/api/
+- Angel SmartAPI FAQ: https://smartapi.angelbroking.com/faq
+- ICICI Breeze API: https://www.icicidirect.com/futures-and-options/api/breeze
+- NSE domestic market data pricing: https://nsearchives.nseindia.com/web/mediaattachment/2026-04/Download_Pricing_file_-_Domestic_clients_20260424122229.pdf
