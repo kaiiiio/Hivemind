@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="HIVEMIND architecture whitepaper: a dark-theme deep read on the AI-swarm capital-markets intelligence terminal for Indian markets."
+    />
+    <title>HIVEMIND Architecture Whitepaper</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="#top" aria-label="HIVEMIND architecture whitepaper">
+        <span class="brand-mark"></span>
+        <span>HIVEMIND</span>
+      </a>
+      <nav class="topnav" aria-label="Primary navigation">
+        <a href="#index">Index</a>
+        <a href="#mesh">Market Mesh</a>
+        <a href="#swarm">Swarm Runtime</a>
+        <a href="#terminal">Terminal</a>
+        <a href="#glossary">Glossary</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Canonical Architecture Whitepaper</p>
+          <h1>HIVEMIND is a swarm-intelligence terminal for Indian capital markets.</h1>
+          <p class="lede">
+            A serious market terminal has to connect evidence, instruments, issuers, policy, tenders, rates,
+            commodities, FX, derivatives, valuation, price action, portfolio exposure, and agent reasoning into one
+            replayable system. This document describes that system end to end.
+          </p>
+          <div class="thesis-strip" aria-label="Core thesis">
+            <span>Evidence lake</span>
+            <span>Event graph</span>
+            <span>Situation engines</span>
+            <span>Quant validation</span>
+            <span>AI swarms</span>
+          </div>
+        </div>
+        <div class="hero-system" aria-label="Architecture stack">
+          <div class="system-step red">
+            <span>01</span>
+            <strong>Raw Evidence</strong>
+            <p>Filings, market data, tenders, macro, search snapshots, source timestamps.</p>
+          </div>
+          <div class="system-step blue">
+            <span>02</span>
+            <strong>Parsed Records</strong>
+            <p>Tables, fields, entities, events, checksums, parser confidence.</p>
+          </div>
+          <div class="system-step green">
+            <span>03</span>
+            <strong>Graph + Features</strong>
+            <p>Relationships, price action, valuation, liquidity, FX, rates, flows.</p>
+          </div>
+          <div class="system-step amber">
+            <span>04</span>
+            <strong>Situation Engines</strong>
+            <p>Issuer catalyst, policy tailwind, commodity transmission, index flow.</p>
+          </div>
+          <div class="system-step purple">
+            <span>05</span>
+            <strong>Swarm Runtime</strong>
+            <p>Router, memory broker, specialist agents, critique, synthesis.</p>
+          </div>
+          <div class="system-step cyan">
+            <span>06</span>
+            <strong>Terminal Surfaces</strong>
+            <p>Search, situation monitor, portfolio workspace, evidence explorer.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="document-shell" id="index">
+        <aside class="toc" aria-label="Whitepaper index">
+          <span class="toc-title">Index</span>
+          <a href="#thesis">01 Product Thesis</a>
+          <a href="#terminal">02 Terminal Product</a>
+          <a href="#mesh">03 Cross-Asset Mesh</a>
+          <a href="#swarm">04 Swarm-First Architecture</a>
+          <a href="#runtime">05 Runtime Services</a>
+          <a href="#research">06 Deep Research Jobs</a>
+          <a href="#memory">07 Knowledge And Memory</a>
+          <a href="#layers">08 System Layers</a>
+          <a href="#evidence">09 Evidence Layers</a>
+          <a href="#situations">10 Situation Engines</a>
+          <a href="#agents">11 Agent Operating Model</a>
+          <a href="#tokens">12 Token Efficiency</a>
+          <a href="#validation">13 Backtesting</a>
+          <a href="#valuation">14 Price And Valuation</a>
+          <a href="#sequence">15 Build Sequence</a>
+          <a href="#moat">16 Moat</a>
+          <a href="#glossary">17 Glossary</a>
+        </aside>
+
+        <article class="paper">
+          <section class="paper-section opening">
+            <p class="section-label">Architecture Scope</p>
+            <h2>This is not a stock picker. It is a capital-markets operating system.</h2>
+            <p>
+              HIVEMIND covers Indian capital markets across shares and equities, debt, commodities, FX, rates,
+              derivatives for hedging, macro policy, procurement flows, market-structure events, and price action.
+              The system should answer a harder question than "which security has the highest score?"
+            </p>
+            <blockquote>
+              What changed across capital markets, who benefits or loses, how material is it, what can hedge or
+              amplify the risk, and what evidence supports or weakens the view?
+            </blockquote>
+          </section>
+
+          <section class="paper-section" id="thesis">
+            <p class="section-label">01 Product Thesis</p>
+            <h2>Markets do not move as one clean signal. They move as situations.</h2>
+            <p>
+              A normal screener sees a price jump. A news scraper sees a headline. A generic LLM sees a story.
+              HIVEMIND must see a situation forming across evidence, time, relationships, market behavior, valuation,
+              and portfolio exposure.
+            </p>
+            <div class="formula">
+              <span>event</span>
+              <b>+</b>
+              <span>materiality</span>
+              <b>+</b>
+              <span>exposure</span>
+              <b>+</b>
+              <span>market behavior</span>
+              <b>+</b>
+              <span>valuation</span>
+              <b>+</b>
+              <span>evidence quality</span>
+            </div>
+            <p>
+              The operating model is evidence-first: raw evidence exists before parsing, summarization, embeddings,
+              graph edges, agent reasoning, or investor-facing claims. AI improves investigation; it does not become
+              the source of truth.
+            </p>
+          </section>
+
+          <section class="paper-section" id="terminal">
+            <p class="section-label">02 Terminal Product</p>
+            <h2>The end product is a professional capital-markets terminal.</h2>
+            <p>
+              The terminal is not a passive dashboard and not a chatbot. It is a workspace where a user can search,
+              investigate, monitor, replay, and manage portfolios around market situations.
+            </p>
+
+            <div class="terminal-frame">
+              <div class="terminal-head">
+                <strong>HIVEMIND Terminal</strong>
+                <span>search: issuer, security, sector, commodity, rate, derivative, policy, tender, situation</span>
+              </div>
+              <div class="terminal-grid">
+                <nav>
+                  <span>Situations</span>
+                  <span>Portfolio</span>
+                  <span>Evidence</span>
+                  <span>Graph</span>
+                  <span>Backtests</span>
+                </nav>
+                <section>
+                  <div class="queue-row active">
+                    <b>Policy / Tender Tailwind</b>
+                    <span>fresh evidence, high materiality, valuation still testable</span>
+                  </div>
+                  <div class="queue-row">
+                    <b>Commodity Transmission</b>
+                    <span>metal spread shock, margin beneficiaries and losers</span>
+                  </div>
+                  <div class="queue-row">
+                    <b>Market Structure Flow</b>
+                    <span>index rebalance candidate, passive demand vs liquidity</span>
+                  </div>
+                </section>
+                <aside>
+                  <h3>Situation Brief</h3>
+                  <p>Each brief is a structured evidence object, not a decorative score.</p>
+                  <div class="brief-schema">
+                    <span><b>Trigger</b> source event and timestamp</span>
+                    <span><b>Materiality</b> relation to revenue, market cap, order book, liquidity</span>
+                    <span><b>Evidence</b> raw source IDs and parser confidence</span>
+                    <span><b>Market context</b> price, volume, delivery, peers, flows</span>
+                    <span><b>Valuation</b> current multiple, history, peer range, expectation risk</span>
+                    <span><b>Open questions</b> missing facts and invalidation triggers</span>
+                  </div>
+                </aside>
+              </div>
+            </div>
+
+            <div class="surface-table">
+              <div><b>Universal Search</b><span>Jump to issuer, instrument, sector, commodity, currency, rate, derivative, policy, tender, flow event, or situation family.</span></div>
+              <div><b>Situation Monitor</b><span>Rank forming situations by freshness, materiality, evidence grade, market confirmation, valuation state, and uncertainty.</span></div>
+              <div><b>Security Page</b><span>Issuer profile, filings, catalysts, price and delivery, valuation, peers, credit/rate context, risks, and historical event trail.</span></div>
+              <div><b>Cross-Asset Pages</b><span>Crude, metals, FX, rates, debt/credit, derivatives, index flows, policy, procurement, and macro shock dashboards.</span></div>
+              <div><b>Evidence Explorer</b><span>Raw source, timestamp, parsed fields, linked entities, checksums, parser confidence, and source reliability.</span></div>
+              <div><b>Agent Analysis Panel</b><span>Which agents investigated, what they concluded, where they disagree, and which evidence is still missing.</span></div>
+              <div><b>Research Queue</b><span>Unresolved questions, search tasks, watch triggers, user prompts, and post-mortems.</span></div>
+            </div>
+          </section>
+
+          <section class="paper-section" id="mesh">
+            <p class="section-label">03 Cross-Asset Market Mesh</p>
+            <h2>The system treats markets as a causal mesh, not isolated tickers.</h2>
+            <p>
+              Indian market moves are fragmented across exchange filings, ministry releases, tender portals, company
+              media, crude and metals, USD/INR, G-sec yields, rating changes, liquidity, index flows, F&O inclusion,
+              block deals, surveillance actions, and unexplained price behavior.
+            </p>
+            <div class="mesh-panel">
+              <div class="mesh-source">Policy / budgets / regulators</div>
+              <div class="mesh-source">Tenders / procurement</div>
+              <div class="mesh-source">Rates / FX / inflation</div>
+              <div class="mesh-source">Crude / gas / freight</div>
+              <div class="mesh-source">Copper / steel / aluminium / zinc</div>
+              <div class="mesh-source">G-sec yields / credit spreads</div>
+              <div class="mesh-source">Futures / options / hedge instruments</div>
+              <div class="mesh-core">Companies, securities, sectors, valuation, flows, price action</div>
+              <div class="mesh-output">Situation candidates</div>
+            </div>
+            <div class="matrix">
+              <div><b>Crude shock</b><span>Which companies benefit from upstream pricing, and which lose through input costs?</span></div>
+              <div><b>INR weakness</b><span>Which exporters benefit, which import-heavy firms or foreign-debt borrowers suffer?</span></div>
+              <div><b>Metal price rise</b><span>Which producers benefit, and which manufacturers face margin risk?</span></div>
+              <div><b>Bond-yield change</b><span>Which banks, NBFCs, utilities, real estate, and high-duration growth stocks reprice?</span></div>
+              <div><b>MSCI rebalance</b><span>Is passive demand large relative to average traded value and free float?</span></div>
+              <div><b>Policy / tender wave</b><span>Which listed suppliers have actual capability, past exposure, and balance sheet capacity?</span></div>
+            </div>
+            <p class="callout">
+              The system should never say "crude up, buy energy." It must map exposure, materiality, liquidity,
+              valuation, confirmation, and risk transfer.
+            </p>
+          </section>
+
+          <section class="paper-section" id="swarm">
+            <p class="section-label">04 Swarm-First Architecture</p>
+            <h2>AI swarms are not a late layer. They operate across the pipeline.</h2>
+            <p>
+              HIVEMIND starts with 10-15 core agents and workers, then scales to 30-40 specialists through routing.
+              The important part is not running every agent on everything. The important part is selecting the smallest
+              useful specialist set for the situation, research job, or portfolio question.
+            </p>
+            <div class="swarm-grid">
+              <article><h3>Data Ingestion</h3><p>Monitor sources, parse filings, resolve entities, detect schema drift, audit missing records.</p></article>
+              <article><h3>Search And Research</h3><p>Generate targeted queries, classify source quality, triangulate evidence, verify against official sources.</p></article>
+              <article><h3>Graph Construction</h3><p>Extract relationships, merge aliases, link company-sector-policy-tender-customer-commodity edges.</p></article>
+              <article><h3>Situation Detection</h3><p>Explain why an event belongs to a situation family and identify missing facts.</p></article>
+              <article><h3>Quant Validation</h3><p>Run event studies, abnormal-return checks, regime filters, peer comparisons, and liquidity checks.</p></article>
+              <article><h3>Risk And Valuation</h3><p>Challenge the thesis, detect crowded/euphoric setups, flag balance sheet and governance risk.</p></article>
+              <article><h3>Final Synthesis</h3><p>Preserve opportunity/risk uncertainty and publish an evidence-cited situation brief.</p></article>
+            </div>
+            <p>
+              Markets are multi-causal. One model cannot reliably parse filings, map sector exposure, test price
+              action, inspect valuation, challenge risks, and explain hedge context in one pass. Specialist agents
+              give each role its own tools, schemas, prompts, budgets, and quality gates.
+            </p>
+          </section>
+
+          <section class="paper-section" id="runtime">
+            <p class="section-label">05 Runtime Services</p>
+            <h2>The swarm is a governed runtime, not a pile of prompts.</h2>
+            <div class="runtime-line">
+              <span>trigger</span><span>router</span><span>task graph</span><span>agent workspaces</span><span>tool gateway</span><span>memory broker</span><span>evidence contracts</span><span>critique</span><span>synthesis</span><span>terminal</span><span>replay</span>
+            </div>
+            <div class="service-list">
+              <div><b>Event Bus</b><span>Receives filings, price moves, rate/FX/commodity shocks, policy releases, index events, user queries, and data gaps.</span></div>
+              <div><b>Orchestrator / Router</b><span>Decomposes a situation into a task DAG, assigns agents, model tier, budget, priority, deadline, and stop rules.</span></div>
+              <div><b>Agent Registry</b><span>Stores mandate, productive bias, blind spots, source priority, allowed tools, output schema, and quality gate.</span></div>
+              <div><b>Tool Gateway</b><span>Controls access to market data, filings, search, graph, feature store, backtest runner, and source adapters.</span></div>
+              <div><b>Memory Broker</b><span>Builds compact context packs from BM25, vector retrieval, graph neighborhoods, cached profiles, and prior outcomes.</span></div>
+              <div><b>Evidence Contract Validator</b><span>Rejects outputs without evidence IDs, timestamps, extracted fields, confidence, uncertainty, and lineage.</span></div>
+              <div><b>Critique Loop</b><span>Runs risk review, quant validation, missing-evidence search, disagreement checks, and invalidation triggers.</span></div>
+              <div><b>Replay Logger</b><span>Stores prompts, model versions, context, tool calls, outputs, decisions, and later outcomes.</span></div>
+            </div>
+            <div class="runtime-example">
+              <h3>Example: crude + INR + rates shock</h3>
+              <ol>
+                <li>Market workers detect crude, USD/INR, G-sec yields, and sector breadth moving together.</li>
+                <li>The router activates macro, commodity, credit, equity exposure, derivatives/hedge, valuation, market behavior, and risk agents.</li>
+                <li>The memory broker sends only relevant exposures, filings, peer history, hedge history, similar event windows, and source IDs.</li>
+                <li>Specialists disagree productively: beneficiaries, margin losers, funding risk, hedge availability, price/liquidity confirmation, valuation stretch.</li>
+                <li>The synthesis agent publishes a terminal situation page with evidence, confidence, uncertainty, hedge context, and monitoring triggers.</li>
+                <li>The replay loop later scores early, late, false positive, useful watch, missed catalyst, and which agents were useful or noisy.</li>
+              </ol>
+            </div>
+          </section>
+
+          <section class="paper-section" id="research">
+            <p class="section-label">06 Deep Research Jobs</p>
+            <h2>A complex prompt becomes a governed workflow.</h2>
+            <p>
+              A user prompt such as "scan broker reports and Q4 earnings for small/mid-cap stocks with high upside and
+              strict financial guardrails" must not run as one long prompt. It compiles into a research job object with
+              universe, dates, source rules, hard filters, formulas, agent plan, stop rules, output schema, and memory writeback.
+            </p>
+            <pre><code>{
+  "objective": "find top mispriced equities by broker target upside",
+  "market": "India",
+  "time_window": ["2026-04-01", "2026-05-31"],
+  "source_scope": [
+    "institutional brokerage reports",
+    "target-price revisions",
+    "audited earnings releases",
+    "exchange filings",
+    "shareholding and pledge disclosures"
+  ],
+  "hard_filters": {
+    "roce_gt": 0.18,
+    "cfo_to_ebitda_gt": 0.70,
+    "net_debt_to_equity_lt": 0.30,
+    "promoter_pledge_eq": 0,
+    "pat_or_forward_eps_growth_gt": 0.30
+  },
+  "ranking_formula": "(target_price - cmp) / cmp",
+  "output_schema": "ranked_candidates_with_evidence_and_rejections"
+}</code></pre>
+            <div class="stage-grid">
+              <span>Scope compiler</span><span>Universe builder</span><span>Source discovery</span><span>Evidence intake</span><span>Extraction</span><span>Candidate generation</span><span>Guardrail filters</span><span>Valuation math</span><span>Catalyst analysis</span><span>Debate</span><span>Final ranking</span><span>Outcome tracking</span>
+            </div>
+            <div class="agent-table">
+              <div><b>Scope Compiler</b><span>Converts prompt into universe, dates, source rules, filters, formulas, and output schema.</span></div>
+              <div><b>Source Discovery Agent</b><span>Finds broker reports, earnings releases, exchange filings, concalls, target revisions, and pledge data.</span></div>
+              <div><b>Broker Target Extractor</b><span>Extracts brokerage, analyst, date, rating, target price, CMP used, EPS estimates, and thesis.</span></div>
+              <div><b>Fundamental Guardrail Agent</b><span>Applies ROCE, cash conversion, leverage, pledge, and growth constraints with evidence IDs.</span></div>
+              <div><b>Valuation Math Agent</b><span>Calculates upside, trailing P/E, forward P/E, EPS growth, and valuation spread.</span></div>
+              <div><b>Risk Review Agent</b><span>Rejects value traps, stale targets, governance concerns, liquidity traps, and unsupported estimates.</span></div>
+              <div><b>Synthesis Agent</b><span>Publishes accepted candidates, rejected candidates, evidence, calculations, and unresolved gaps.</span></div>
+            </div>
+            <p class="callout">
+              If a source cannot be verified, the system marks EVIDENCE_GAP. AI can find, parse, compare, debate, and
+              summarize evidence. It is not the source of truth.
+            </p>
+          </section>
+
+          <section class="paper-section" id="memory">
+            <p class="section-label">07 Knowledge And Memory</p>
+            <h2>Do not dump everything into one vector store and call it memory.</h2>
+            <p>
+              User prompts, analyst notes, research reports, observations, and post-mortems become knowledge artifacts.
+              They are not automatically facts. They become templates, checklists, candidate source lists, situation
+              patterns, post-mortem lessons, and evaluation datasets.
+            </p>
+            <div class="memory-stack">
+              <div><b>Raw Evidence Lake</b><span>Exact filings, PDFs, API payloads, pages, RSS items, tables, transcripts, checksums.</span><em>Truth and replay.</em></div>
+              <div><b>Parsed Records</b><span>Extracted fields, tables, spans, timestamps, entity links, parser confidence.</span><em>Joins and calculations.</em></div>
+              <div><b>Feature Store</b><span>Prices, delivery, valuation, liquidity, yields, FX, commodities, macro, flow, event windows.</span><em>Fast scoring and backtests.</em></div>
+              <div><b>Vector Store</b><span>Embeddings for reports, filings, situations, theses, notes, transcript chunks.</span><em>Semantic recall.</em></div>
+              <div><b>Graph Store</b><span>Company-sector-policy-customer-tender-commodity-rate-credit-derivative-event relationships.</span><em>Multi-hop reasoning.</em></div>
+              <div><b>Agent Run Store</b><span>Prompts, model, context pack, tool calls, outputs, confidence, errors, costs.</span><em>Debugging and scorecards.</em></div>
+              <div><b>Outcome Memory</b><span>Post-mortems, abnormal returns, false positives, missed catalysts, useful watches, agent performance.</span><em>Learning what worked.</em></div>
+            </div>
+            <p>
+              Stored knowledge does not automatically change GPT, Gemini, Qwen, or DeepSeek model weights. It makes
+              HIVEMIND smarter because retrieval, routing, critique, scoring, thresholds, and memory improve around the model.
+            </p>
+          </section>
+
+          <section class="paper-section" id="layers">
+            <p class="section-label">08 System Layers</p>
+            <h2>The operating stack moves from raw sources to replayable decisions.</h2>
+            <div class="layer-stack">
+              <div><b>Raw Sources</b><span>Exchange filings, announcements, bhavcopy, delivery, corporate actions, tenders, ministries, regulators, rates, FX, commodities, derivatives, search snapshots.</span></div>
+              <div><b>Bronze Evidence Lake</b><span>Exact raw payloads, timestamped, checksummed, source-tagged, replayable.</span></div>
+              <div><b>Silver Parsed Records</b><span>Normalized documents, fields, tables, events, entity links, parser confidence.</span></div>
+              <div><b>Graph + Feature Store</b><span>Time-aware entity graph and quantitative features for price, valuation, macro, flow, liquidity, and events.</span></div>
+              <div><b>Situation Engines</b><span>Specific detection logic for issuer catalysts, credit/rates, commodities, FX, derivatives, flows, policy/tenders, valuation repricing.</span></div>
+              <div><b>Swarm Router</b><span>Selects agents, tools, context packs, model tiers, budgets, and stop rules.</span></div>
+              <div><b>Synthesis + Terminal</b><span>Situation briefs, alerts, watchlists, research queues, evidence explorer, portfolio workspace, post-mortems.</span></div>
+            </div>
+          </section>
+
+          <section class="paper-section" id="evidence">
+            <p class="section-label">09 Evidence Layers</p>
+            <h2>Every important output must be replayable from raw evidence.</h2>
+            <div class="evidence-triad">
+              <article><h3>Bronze</h3><p>Exact raw evidence: HTML, PDFs, CSV, RSS items, API payloads, search result snapshots.</p></article>
+              <article><h3>Silver</h3><p>Parsed and normalized evidence: extracted text, tables, entity links, cleaned filings, normalized events.</p></article>
+              <article><h3>Gold</h3><p>Decision-grade objects: canonical events, features, situations, briefs, alerts, outcome labels.</p></article>
+            </div>
+            <ul class="rules">
+              <li>Never skip bronze storage.</li>
+              <li>Never let AI overwrite raw evidence.</li>
+              <li>Every gold object traces back to evidence IDs.</li>
+              <li>All AI outputs store provider, model, prompt version, evidence IDs, and schema version.</li>
+              <li>Old raw evidence must be replayable when parsers or models improve.</li>
+            </ul>
+          </section>
+
+          <section class="paper-section" id="situations">
+            <p class="section-label">10 Situation Engines</p>
+            <h2>Situation engines prevent the product from becoming one generic score.</h2>
+            <div class="situation-grid">
+              <article><h3>Issuer Catalyst</h3><p>Order wins, results, capex, ratings, governance. Material relative to scale, liquidity, valuation, and credit risk?</p></article>
+              <article><h3>Credit / Rate Repricing</h3><p>G-sec curve, credit spreads, ratings, funding stress. Which sectors and valuation regimes reprice?</p></article>
+              <article><h3>Commodity Transmission</h3><p>Crude, gas, metals, freight, inventory cycles. Who benefits or loses through spreads and demand shifts?</p></article>
+              <article><h3>FX Exposure</h3><p>USD/INR, exporter/importer exposure, foreign debt. Which companies are exposed and are they hedged?</p></article>
+              <article><h3>Derivatives / Hedge Context</h3><p>F&O inclusion, futures basis, options context, hedge availability, crowding, and risk transfer.</p></article>
+              <article><h3>Market Structure Flow</h3><p>MSCI, FTSE, Nifty/BSE, F&O, surveillance, block/bulk. Are mechanical flows large relative to liquidity?</p></article>
+              <article><h3>Policy / Tender Tailwind</h3><p>New tenders, L1 awards, procurement waves, regulation. Which issuers, sectors, inputs, and debt profiles are affected?</p></article>
+              <article><h3>Valuation Repricing</h3><p>Catalyst plus valuation context. Is the event cheap, priced in, euphoric, or a value trap?</p></article>
+            </div>
+            <pre><code>{
+  "situation_type": "material_order_win_rerating",
+  "instrument_id": "INSTRUMENT_ID",
+  "trigger_event_id": "EVENT_ID",
+  "evidence_ids": ["EV_1", "EV_2"],
+  "materiality": {
+    "order_value_to_market_cap": 0.18,
+    "order_value_to_revenue": 0.42
+  },
+  "market_behavior": ["volume_expansion", "breakout"],
+  "tailwinds": ["digital_infrastructure", "government_it_spend"],
+  "valuation_context": "fair_with_confirmation",
+  "confidence": 0.78,
+  "uncertainties": ["margin profile undisclosed", "execution duration unclear"]
+}</code></pre>
+          </section>
+
+          <section class="paper-section" id="agents">
+            <p class="section-label">11 Agent Operating Model</p>
+            <h2>Agents are executable roles with mandates, tools, biases, and quality gates.</h2>
+            <p>
+              Agent personality is not branding. It means each agent has a mandate, productive bias, retrieval order,
+              evidence-weighting policy, known blind spots, allowed tools, output schema, and quality gate.
+            </p>
+            <div class="agent-roster">
+              <span>Source Health</span><span>Evidence Intake</span><span>Filing Parser</span><span>Entity Resolver</span><span>Market Data Worker</span><span>Macro / Policy</span><span>Tender Agent</span><span>Search Investigator</span><span>Graph Builder</span><span>Price / Volume</span><span>Valuation</span><span>Quant Validator</span><span>Bull Case</span><span>Risk Review</span><span>Synthesis</span>
+            </div>
+            <div class="bias-table">
+              <div><b>Macro Agent</b><span>Starts from rates, FX, liquidity, inflation, policy, crude, and global risk.</span><em>Can over-explain company moves with macro narratives.</em></div>
+              <div><b>Credit Agent</b><span>Assumes solvency, spreads, ratings, and funding cost matter first.</span><em>Can underweight equity upside when balance sheet risk looks noisy.</em></div>
+              <div><b>Commodity Agent</b><span>Maps input/output spreads, energy, metals, freight, inventory cycles.</span><em>Can miss demand-side or execution differences.</em></div>
+              <div><b>Equity Catalyst Agent</b><span>Focuses on materiality of filings, orders, capex, results, governance.</span><em>Can overrate catalysts if valuation and liquidity are stretched.</em></div>
+              <div><b>Derivatives / Hedge Agent</b><span>Checks F&O status, futures basis, options context, hedge feasibility.</span><em>Can overemphasize short-term positioning noise.</em></div>
+              <div><b>Valuation Agent</b><span>Assumes narratives fail if already priced in.</span><em>Can miss rerating when fundamentals are genuinely changing.</em></div>
+              <div><b>Market Behavior Agent</b><span>Trusts price, delivery, volume, breadth, and liquidity confirmation.</span><em>Can be fooled by thin liquidity and temporary flow.</em></div>
+              <div><b>Risk Review Agent</b><span>Tries to reject weak theses and stale evidence.</span><em>Can become too conservative if not balanced by opportunity agents.</em></div>
+            </div>
+          </section>
+
+          <section class="paper-section" id="tokens">
+            <p class="section-label">12 Token-Efficient Intelligence</p>
+            <h2>The AI budget is controlled by design, not hope.</h2>
+            <div class="token-grid">
+              <article><h3>Deterministic First Pass</h3><p>Rules, parsers, source metadata, joins, and quant features run before LLM calls.</p></article>
+              <article><h3>Model Routing</h3><p>Cheap models classify and extract; stronger models handle high-value reasoning.</p></article>
+              <article><h3>Prompt Caching</h3><p>Company, sector, source, and instruction packs should be cacheable.</p></article>
+              <article><h3>Evidence IDs</h3><p>Agents receive compact references and relevant snippets, not full raw documents by default.</p></article>
+              <article><h3>Graph Retrieval</h3><p>Bring only relevant neighborhoods, not the whole corpus.</p></article>
+              <article><h3>Hybrid Retrieval</h3><p>BM25 + vector + graph avoids stuffing irrelevant context into prompts.</p></article>
+              <article><h3>Context Compression</h3><p>Retrieved evidence becomes source-cited context packs.</p></article>
+              <article><h3>Confidence Gates</h3><p>Escalate only when confidence is low, evidence conflicts, or situation value is high.</p></article>
+            </div>
+          </section>
+
+          <section class="paper-section" id="validation">
+            <p class="section-label">13 Backtesting And Quant Validation</p>
+            <h2>AI explains situations. Quant validation checks whether they mattered.</h2>
+            <p>
+              Backtesting asks whether similar events created abnormal returns, whether the move was issuer-specific
+              or regime-driven, whether volume and delivery confirmed, whether the event decayed or persisted, whether
+              hedges helped, which features predicted false positives, and whether valuation was already euphoric.
+            </p>
+            <div class="window-row">
+              <span>T-5 to T-1<br />pre-event accumulation</span>
+              <span>T0<br />event day</span>
+              <span>T+1 to T+5<br />immediate reaction</span>
+              <span>T+6 to T+20<br />swing follow-through</span>
+            </div>
+            <ul class="rules">
+              <li>Point-in-time data only.</li>
+              <li>Corporate actions and instrument identity handled before returns are computed.</li>
+              <li>No survivorship bias.</li>
+              <li>Explicit costs, slippage, liquidity, and hedge assumptions.</li>
+              <li>Walk-forward testing for thresholds and ranking.</li>
+              <li>Report hit rate, payoff distribution, drawdown, turnover, exposure, and deflated Sharpe where relevant.</li>
+            </ul>
+          </section>
+
+          <section class="paper-section" id="valuation">
+            <p class="section-label">14 Price Action And Valuation</p>
+            <h2>Price action is evidence, not a thesis.</h2>
+            <div class="two-col">
+              <article>
+                <h3>Track Market Behavior</h3>
+                <p>1D, 3D, 5D, 20D, 60D returns; sector-relative and market-relative return; volume z-score; value traded; delivery percentage; delivery z-score; breakout; gap; failed breakout; drawdown; volatility expansion; block/bulk deals; liquidity regime.</p>
+              </article>
+              <article>
+                <h3>Track Valuation Context</h3>
+                <p>Market cap, enterprise value, P/E, EV/EBITDA, price/sales, price/book, ROE, ROCE, debt/equity, interest coverage, revenue trend, margin trend, order book to market cap, valuation percentile, peer premium or discount.</p>
+              </article>
+            </div>
+            <div class="distinction">
+              <span><b>Catalyst</b> what changed</span>
+              <span><b>Price action</b> whether the market is reacting</span>
+              <span><b>Fundamentals</b> whether the company can convert it</span>
+              <span><b>Valuation</b> how much is already priced in</span>
+            </div>
+          </section>
+
+          <section class="paper-section" id="sequence">
+            <p class="section-label">15 First Build Sequence</p>
+            <h2>Build from evidence spine to portfolio-aware swarm terminal.</h2>
+            <ol class="build-list">
+              <li>Instrument universe: listed issuers/securities, ISIN identity, BSE/NSE mappings, market-cap buckets, debt/rates/commodity/FX/derivatives references.</li>
+              <li>Raw evidence store: source, URL, timestamps, checksum, raw text/path.</li>
+              <li>Official events: BSE/NSE announcements, RSS/circulars, company filings.</li>
+              <li>EOD market behavior: bhavcopy, OHLCV, delivery, turnover, corporate actions.</li>
+              <li>Situation V1: order wins, results, promoter actions, capex, ratings, unexplained price action.</li>
+              <li>Macro/policy sources: SEBI, RBI, MoSPI/eSankhyiki, PIB, ministries.</li>
+              <li>Market-structure lane: MSCI/FTSE/Nifty/BSE index events, F&O, ASM/GSM, block/bulk.</li>
+              <li>Cross-asset lane: crude, gas, metals, USD/INR, yields, global risk, geopolitical shocks.</li>
+              <li>Tender lane: CPPP, GeM, IREPS, PSU and sector portals.</li>
+              <li>Ingestion swarm: parser, entity resolver, source health, search audit, graph writer.</li>
+              <li>AI layer: provider interface, model router, memory/retrieval, specialist agents, synthesis agent.</li>
+              <li>Quant validation: event-study replay, post-mortems, false-positive labels.</li>
+            </ol>
+          </section>
+
+          <section class="paper-section" id="moat">
+            <p class="section-label">16 Moat</p>
+            <h2>The moat is not "we use AI."</h2>
+            <p>The moat compounds through proprietary cleaned Indian market evidence and the operating memory around it.</p>
+            <div class="moat-grid">
+              <span>Cleaned Indian market evidence</span>
+              <span>Time-aware company-sector-policy-tender graph</span>
+              <span>Situation-specific outcome labels</span>
+              <span>Missed-catalyst audit history</span>
+              <span>Model-agnostic agent prompts and swarm workflows</span>
+              <span>Replayable event-study evidence</span>
+              <span>Source-health and parsing know-how for messy Indian data</span>
+            </div>
+            <p>
+              Over time, HIVEMIND learns which situations actually mattered, which were noise, and which agents caught
+              or missed them. That learning sits in evidence, graph structure, outcome memory, routing, thresholds,
+              prompts, and terminal workflow.
+            </p>
+          </section>
+
+          <section class="paper-section" id="glossary">
+            <p class="section-label">17 Glossary</p>
+            <h2>Shared vocabulary for investors, engineers, and researchers.</h2>
+            <div class="glossary-grid">
+              <div><b>Situation</b><span>A market event plus materiality, exposure, market behavior, valuation, evidence quality, and uncertainty.</span></div>
+              <div><b>Evidence ID</b><span>A stable reference to raw or parsed evidence used to support a claim.</span></div>
+              <div><b>Bronze</b><span>Exact raw evidence stored before transformation.</span></div>
+              <div><b>Silver</b><span>Parsed and normalized evidence with fields, spans, tables, entities, and confidence.</span></div>
+              <div><b>Gold</b><span>Decision-grade objects such as events, features, situations, alerts, briefs, and outcome labels.</span></div>
+              <div><b>Memory Broker</b><span>Runtime service that assembles compact context packs from search, vector, graph, cached profiles, and outcomes.</span></div>
+              <div><b>Agent Registry</b><span>Configuration store for agent mandates, tools, schemas, source rules, quality gates, and blind spots.</span></div>
+              <div><b>Situation Engine</b><span>Specific detection and validation logic for one family of market situations.</span></div>
+              <div><b>Outcome Memory</b><span>Post-mortem store that records what alerts worked, failed, arrived late, or missed key evidence.</span></div>
+              <div><b>Model Agnostic</b><span>Agents call a provider interface so the same role can run on Gemini, GPT, Qwen, DeepSeek, local models, or mock providers.</span></div>
+            </div>
+          </section>
+        </article>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <strong>HIVEMIND</strong>
+      <a href="#top">Back to top</a>
+    </footer>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

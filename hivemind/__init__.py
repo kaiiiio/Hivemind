@@ -1,0 +1,2 @@
+"""HIVEMIND market intelligence system."""
+

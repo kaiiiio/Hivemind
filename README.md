@@ -1,33 +1,32 @@
-# HIVEMIND - Multi-Agent AI Trading System
+# HIVEMIND
 
-[![Status](https://img.shields.io/badge/Status-Development-orange)](docs/ROADMAP.md)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+HIVEMIND is an AI-swarm capital-markets intelligence terminal architecture for Indian markets.
 
-HIVEMIND is a swarm-based AI trading system that wraps quantitative signal generation inside a multi-agent consensus framework. Unlike traditional signal engines, HIVEMIND uses specialized AI agents that debate, research, remember, and learn from each trade.
+## One-Click Vercel Deploy
 
----
+Use the button below to deploy the architecture whitepaper site from this repository root.
 
-## 🚀 Vision
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fkaiiiio%2FHivemind&project-name=hivemind-architecture&repository-name=Hivemind)
 
-To build an autonomous trading entity where diverse AI agents (Fundamentalists, Technicians, Macro Analysts) collaborate to find high-probability setups while strictly adhering to risk management protocols.
+Vercel settings should stay simple:
 
-## 📖 Documentation
+- Framework preset: `Other`
+- Root directory: repository root
+- Build command: leave blank
+- Output directory: leave blank
 
-Explore the detailed documentation to get started and understand the system architecture.
+The root `vercel.json` rewrites `/` to `investor_site/index.html`, so the deployed home page opens directly to the whitepaper.
 
-- 🛠️ **[Setup Guide](docs/SETUP.md)** - Environment initialization, dependencies, and configuration.
-- 🏗️ **[Architecture Overview](docs/ARCHITECTURE.md)** - Technical breakdown of the system components and data flow.
-- 📈 **[Roadmap & Status](docs/ROADMAP.md)** - Development phases, current progress, and future milestones.
-- 💻 **[Usage Guide](docs/USAGE.md)** - How to run the pipeline and schedule daily tasks.
+## Local Preview
 
-## 🛠️ Tech Stack
+Open:
 
-- **Core**: Python 3.10+
-- **Intelligence**: Multi-Agent Consensus Framework
-- **Database**: TimescaleDB (PostgreSQL) for time-series data
-- **Data Sources**: NSE Official, Screener.in, Yahoo Finance
-- **Infrastructure**: Docker & Playwright
+```text
+investor_site/index.html
+```
 
-## ⚖️ License
+Canonical architecture source:
 
-MIT License - Educational purposes only. **Not financial advice.** Trading involves significant risk.
+```text
+docs/architecture.md
+```
